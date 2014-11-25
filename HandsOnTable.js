@@ -18,4 +18,7 @@ $(document).ready(function () {
 		colHeaders: true,
 		contextMenu: true
 	});
+
+    var chart_client = charts(res);
+    $("#chart_menu").click(chart_client.openModal);
 });
