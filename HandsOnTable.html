@@ -22,8 +22,8 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li><a href="" data-toggle="modal" data-target="#dialogBox">Chart</a></li>
-        <li><a id="aggregateButton" data-toggle="modal" data-target="#dialogBox">Aggregate</a></li>
+        <li><a id="chart_menu" href="" data-toggle="modal" data-target="#dialogBox">Chart</a></li>
+        <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#dialogBox">Aggregate</a></li>
         <li><a href="" data-toggle="modal" data-target="#dialogBox">Add Column</a></li>
         
       </ul>
@@ -38,14 +38,14 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <button type="button" class="close close_button" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
         <h4 class="modal-title"></h4>
       </div>
       <div class="modal-body">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Go</button>
+        <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="go_button">Go</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
