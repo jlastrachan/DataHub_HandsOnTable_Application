@@ -15,7 +15,7 @@ $(document).ready(function () {
 	$('#results').handsontable({
 		data: data,
 		minSpareRows: 1,
-		colHeaders: true,
+		colHeaders: res.field_names,
 		contextMenu: true
 	});
 });
