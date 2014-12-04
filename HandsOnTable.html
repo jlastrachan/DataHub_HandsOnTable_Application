@@ -5,10 +5,13 @@
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/datahub_types.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
+    <script>TABLE_NAME = "test.countries"; </script>
     <script type="text/javascript" src="HandsOnTable.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="http://handsontable.com/dist/handsontable.full.js"></script>
     <script type="text/javascript" src="aggregate.js"></script> 
+    <script type="text/javascript" src="parser.js"></script>
+    <script type="text/javascript" src="row_ops.js"></script>
     <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/handsontable.full.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="css/bootstrap.min.css">
@@ -24,7 +27,7 @@
       <ul class="nav navbar-nav">
         <li><a id="chart_menu" href="" data-toggle="modal" data-target="#dialogBox">Chart</a></li>
         <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#dialogBox">Aggregate</a></li>
-        <li><a href="" data-toggle="modal" data-target="#dialogBox">Add Column</a></li>
+        <li><a id="addColumnButton" href="" data-toggle="modal" data-target="#dialogBox">Add Column</a></li>
         
       </ul>
       

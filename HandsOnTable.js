@@ -4,7 +4,7 @@ $(document).ready(function () {
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
 	con = client.open_connection(con_params),
-	res = client.execute_sql(con, 'select * from finalproject6830.test.cpw_events');
+	res = client.execute_sql(con, 'select * from ' + TABLE_NAME + ' limit 50');
 
 	// $('#results').append('<tr><th>' + res.field_names.join('</th><th>') + '</th></tr>');
 
