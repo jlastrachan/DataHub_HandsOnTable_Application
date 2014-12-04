@@ -90,7 +90,7 @@ function generateQuery () {
 			query+=",";
 		}
 	}
-	query+="from "+tableName;
+	query+="from "+fullTableName;
 	if ($("#groupByColumn").val() !="None") {
 		query+=" group by "+$("#groupByColumn").val();
 	} 

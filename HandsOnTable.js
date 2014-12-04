@@ -1,5 +1,6 @@
 var accountName = "finalproject6830";
 var repoName = "test";
+var fullTableName = "";
 $(document).ready(function () {
 	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
 	protocol = new Thrift.Protocol(transport),
@@ -18,6 +19,7 @@ var updateRepo = function(newRepoName) {
     updateTableData(firstTableName);
     updateTableMenu(firstTableName.substr(accountName.length+1), tables);
     updateRepositoryMenu(repoName, repos);
+    fullTableName = firstTableName;
 }
 
 var updateTableData = function(tableName) {
@@ -40,7 +42,8 @@ var updateTableMenu = function(currentTableName, tables) {
         var midName = repoName + "." + name;
         var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
         tableLink.find("a").click(function() {
-            updateTableData(accountName+"."+midName);
+            fullTableName = accountName + "." + midName;
+            updateTableData(fullTableName);
             updateTableMenu(midName, tables); 
         });
         if (name == shortTableName) {
