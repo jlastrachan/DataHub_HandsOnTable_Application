@@ -22,10 +22,18 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
+        <li class="btn-group dropdown">
+            <button type="button" class="btn btn-info dropdown-toggle navbar-btn" data-toggle="dropdown" aria-expanded="false">
+                <span class="table-name"></span> <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu tables-menu" role="menu">
+                <li class="divider"></li>
+                <li><a href="#">Switch repositories</a></li>
+            </ul>
+        </li>
         <li><a id="chart_menu" href="" data-toggle="modal" data-target="#dialogBox">Chart</a></li>
         <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#dialogBox">Aggregate</a></li>
         <li><a href="" data-toggle="modal" data-target="#dialogBox">Add Column</a></li>
-        
       </ul>
       
     </div><!-- /.navbar-collapse -->
