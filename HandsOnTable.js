@@ -1,4 +1,3 @@
-var tableName = "finalproject6830.test.countries";
 var accountName = "finalproject6830";
 var repoName = "test";
 $(document).ready(function () {
@@ -7,11 +6,19 @@ $(document).ready(function () {
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
 	con = client.open_connection(con_params),
-    tables = client.list_tables(con, repoName);
+    repos = client.list_repos(con);
 
-    updateTableData(tableName);
-    updateTableMenu(tableName.substr(accountName.length+1), tables);
+    updateRepo(repoName);
 });
+
+var updateRepo = function(newRepoName) {
+    repoName = newRepoName;
+    var tables = client.list_tables(con, repoName);
+    var firstTableName = accountName + "." + repoName + "." + tables.tuples[0].cells[0];
+    updateTableData(firstTableName);
+    updateTableMenu(firstTableName.substr(accountName.length+1), tables);
+    updateRepositoryMenu(repoName, repos);
+}
 
 var updateTableData = function(tableName) {
 	var res = client.execute_sql(con, 'select * from '+tableName);
@@ -27,17 +34,31 @@ var updateTableData = function(tableName) {
 var updateTableMenu = function(currentTableName, tables) {
     $(".table-name").text(currentTableName);
     var shortTableName = currentTableName.substr(currentTableName.indexOf(".")+1);
-    var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; });
+    var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; }).reverse();
     $(".table-link").remove();
     table_names.forEach(function (name) { 
-        if (name != shortTableName) {
-            var midName = repoName + "." + name;
-            var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
-            tableLink.find("a").click(function() {
-                updateTableData(accountName+"."+midName);
-                updateTableMenu(midName, tables); 
-            });
-            $(".tables-menu").prepend(tableLink);
+        var midName = repoName + "." + name;
+        var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
+        tableLink.find("a").click(function() {
+            updateTableData(accountName+"."+midName);
+            updateTableMenu(midName, tables); 
+        });
+        if (name == shortTableName) {
+            tableLink.addClass("disabled");
+        }
+        $(".tables-menu").prepend(tableLink);
+    });
+}
+
+var updateRepositoryMenu = function(currentRepoName, repos) {
+    repoNames = repos.tuples.map(function (tuple) { return tuple.cells[0]; });
+    $(".repo-link").remove();
+    repoNames.forEach(function (name) {
+        var repoLink = $("<li class='repo-link'><a href='#'>"+name+"</a></li>");
+        repoLink.find("a").click(function() {updateRepo(name); });
+        $(".tables-menu").append(repoLink);
+        if (name == currentRepoName) {
+            repoLink.addClass("disabled");
         }
     });
 }
