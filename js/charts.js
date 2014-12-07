@@ -31,9 +31,9 @@ var charts = function(result) {
     }
  
     client.openModal = function() {
-        $("#dialogBox").find(".modal-dialog").addClass("modal-lg");
-        var modalTitle = $("#dialogBox").find(".modal-title").text("Create a chart");
-        var modalBody = $("#dialogBox").find(".modal-body").html("");
+        $("#chartModal").find(".modal-dialog").addClass("modal-lg");
+        var modalTitle = $("#chartModal").find(".modal-title").text("Create a chart");
+        var modalBody = $("#chartModal").find(".modal-body").html("");
         var selector = create_selector("Chart type", ["(Select chart type)", "Pie chart", "Bar chart", "Scatterplot"]);
         selector.change(function() { 
             var val = selector.find(":selected").first().attr("value");
@@ -78,12 +78,12 @@ var charts = function(result) {
                     console.log("chart unknown");
             }
         }
-        $("#go_button").click(makeChart);
-        $(".close_button").click(function() {
-            $("#dialogBox").find(".modal-dialog").removeClass("modal-lg");
+        $("#chartModal").find(".go_button").click(makeChart);
+        $("#chartModal").find(".close_button").click(function() {
+            $("#chartModal").find(".modal-dialog").removeClass("modal-lg");
             modalBody.html("");
             modalTitle.text("");
-            $("#go_button").show().unbind("click", makeChart);
+            $("#chartModal").find(".go_button").show().unbind("click", makeChart);
         });
     }
 

@@ -32,6 +32,9 @@ var updateTableData = function(tableName) {
 		contextMenu: true
 	});
 
+    var chart_client = charts(res);
+    $('#chart_menu').unbind('click');
+    $('#chart_menu').click(chart_client.openModal);
 }
 
 var updateTableMenu = function(currentTableName, tables) {
