@@ -3,7 +3,6 @@
     <meta charset="UTF-8">
     <title>DataHub Spreadsheet</title>
     <script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
-    <!script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/jquery/jquery.min.js"></script> 
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/datahub_types.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
@@ -11,8 +10,9 @@
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/charts.js"></script>
     <script type="text/javascript" src="js/d3/d3.js"></script>
-    <script src="http://handsontable.com/dist/jquery.handsontable.full.js"></script>
-    <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/jquery.handsontable.full.css">
+    <script src="http://handsontable.com/dist/handsontable.full.js"></script>
+    <script type="text/javascript" src="aggregate.js"></script> 
+    <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/handsontable.full.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/charts.css">
@@ -26,10 +26,18 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li><a id="chart_menu" href="" data-toggle="modal" data-target="#dialogBox">Chart</a></li>
-        <li><a href="" data-toggle="modal" data-target="#dialogBox">Aggregate</a></li>
-        <li><a href="" data-toggle="modal" data-target="#dialogBox">Add Column</a></li>
-        
+        <li class="btn-group dropdown">
+            <button type="button" class="btn btn-info dropdown-toggle navbar-btn" data-toggle="dropdown" aria-expanded="false">
+                <span class="table-name"></span> <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu tables-menu" role="menu">
+                <li class="divider"></li>
+                <li role="presentation" class="dropdown-header">Switch repositories...</li>
+            </ul>
+        </li>
+        <li><a id="chart_menu" href="" data-toggle="modal" data-target="#chartModal">Chart</a></li>
+        <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#aggregateModal">Aggregate</a></li>
+        <li><a href="" data-toggle="modal" data-target="#columnModal">Add Column</a></li>
       </ul>
       
     </div><!-- /.navbar-collapse -->
@@ -38,7 +46,7 @@
     <table id="results" class="handsontable">
     </table>
 
-    <div class="modal fade" id="dialogBox">
+    <div class="modal fade" id="chartModal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -54,5 +62,38 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+    <div class="modal fade" id="aggregateModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close close_button" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title"></h4>
+      </div>
+      <div class="modal-body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="go_button">Go</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+     <div class="modal fade" id="columnModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close close_button" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title"></h4>
+      </div>
+      <div class="modal-body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="go_button">Go</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+ 
   </body>
 </html>
