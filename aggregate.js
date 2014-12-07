@@ -8,7 +8,7 @@ $('#aggregateButton').click (function() {
 	$("#aggregateFieldset").append('<div class="aggregateSection"> </div>');
 	addAggregateSection(0);
 	addGroupBySection ();
-	aggregateModal.find("#go_button").click( function () {
+	aggregateModal.find(".go_button").click( function () {
 		aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
 	});

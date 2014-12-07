@@ -1,7 +1,11 @@
-var charts = function(result) {
-    var client = {};
+var charts = function(account_name, datahub_client, conn) {
+    var chart_client = {};
 
-    var column_names = result.field_names
+    var repo_name = ""; 
+    var table_name = "";
+    var full_name = "";
+    var table_schema = null;
+    var column_names = [];
 
     var create_selector = function(label, options) {
         var form_group = $("<div>").attr("class", "form-group");
@@ -18,6 +22,17 @@ var charts = function(result) {
         return form_group;
     }
 
+    chart_client.setTableInfo = function(new_repo, new_table) {
+        repo_name = new_repo;
+        table_name = new_table;
+        full_name = account_name + "." + repo_name + "." + table_name;
+    }
+
+    var updateSchema = function() {
+        table_schema = datahub_client.get_schema(conn, full_name).tuples.map(function(tuple) {return tuple.cells; });
+        column_names = table_schema.map(function(cell) { return cell[0]; });
+    }
+
     var showPieMenu = function() {
         $("#chartXCol").find("label").text("Column for categories");
         $("#chartYCol").find("label").text("Column for values");
@@ -30,7 +45,8 @@ var charts = function(result) {
         $("#chart_options").show();
     }
  
-    client.openModal = function() {
+    chart_client.openModal = function() {
+        updateSchema();
         $("#chartModal").find(".modal-dialog").addClass("modal-lg");
         var modalTitle = $("#chartModal").find(".modal-title").text("Create a chart");
         var modalBody = $("#chartModal").find(".modal-body").html("");
@@ -60,7 +76,10 @@ var charts = function(result) {
             var val = selector.find(":selected").first().attr("value");
             var xcol = $("#chartXCol").find("select").prop("selectedIndex");
             var ycol = $("#chartYCol").find("select").prop("selectedIndex");
-            var cdata = result.tuples.map(function (tuple) { return {"xval": tuple.cells[xcol], "yval": tuple.cells[ycol]}; });
+            var x_name = column_names[xcol];
+            var y_name = column_names[ycol];
+            var result = datahub_client.execute_sql(conn, 'select '+x_name+', '+y_name+' from '+full_name);
+            var cdata = result.tuples.map(function (tuple) { return {"xval": tuple.cells[0], "yval": tuple.cells[1]}; });
             modalBody.html("<svg class='chart'></svg>");
             modalTitle.text(val);
             $("#go_button").hide();
@@ -226,5 +245,5 @@ var charts = function(result) {
             .attr("cy", function(d) {return y(d.yval); })
             .attr("r", 3)
         }
-        return client;
+        return chart_client;
     };
