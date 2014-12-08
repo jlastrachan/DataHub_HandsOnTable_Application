@@ -82,7 +82,10 @@ var charts = function(account_name, datahub_client, conn) {
             var cdata = result.tuples.map(function (tuple) { return {"xval": tuple.cells[0], "yval": tuple.cells[1]}; });
             modalBody.html("<svg class='chart'></svg>");
             modalTitle.text(val);
-            $("#go_button").hide();
+            $("#chartModal").find(".go_button").hide();
+            $("#exportSVGButton").show().click(function() {
+                saveSvgAsPng(document.getElementsByClassName('chart')[0], "chart.png");
+            });
             switch(val) {
                 case "Pie chart":
                     makePieChart(cdata, column_names[xcol], column_names[ycol]);
@@ -102,6 +105,7 @@ var charts = function(account_name, datahub_client, conn) {
             $("#chartModal").find(".modal-dialog").removeClass("modal-lg");
             modalBody.html("");
             modalTitle.text("");
+            $("#exportSVGButton").hide();
             $("#chartModal").find(".go_button").show().unbind("click", makeChart);
         });
     }

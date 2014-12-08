@@ -5,7 +5,7 @@
   fill: steelblue;
 }
 .chart text {
-  font: 10px sans-serif;
+  font: 14px;
 }
 .chart {
   display: block;
@@ -13,7 +13,7 @@
   margin-right: auto;
 }
 .slice text {
-  font: 14px sans-serif;
+  font: 14px;
 }
 .axis path,
 .axis line {
