@@ -50,6 +50,7 @@ var charts = function(account_name, datahub_client, conn) {
         $("#chartModal").find(".modal-dialog").addClass("modal-lg");
         var modalTitle = $("#chartModal").find(".modal-title").text("Create a chart");
         var modalBody = $("#chartModal").find(".modal-body").html("");
+        $("#chartModal").find(".go_button").unbind("click");
         var selector = create_selector("Chart type", ["(Select chart type)", "Pie chart", "Bar chart", "Scatterplot"]);
         selector.change(function() { 
             var val = selector.find(":selected").first().attr("value");
@@ -111,9 +112,9 @@ var charts = function(account_name, datahub_client, conn) {
     }
 
     var makePieChart = function(data, xname, yname) {
-        var margin = {top: 30, right: 30, bottom: 30, left: 30},
-            chart_width = 400 - margin.left - margin.right,
-            chart_height = 400 - margin.top - margin.bottom,
+        var margin = {top: 30, right: 70, bottom: 30, left: 70},
+            chart_width = 500 - margin.left - margin.right,
+            chart_height = 420 - margin.top - margin.bottom,
             radius = chart_width / 2;
 
         var chart = d3.select(".chart")
@@ -149,7 +150,7 @@ var charts = function(account_name, datahub_client, conn) {
     };
 
     var makeBarChart = function(data, xname, yname) {
-        var margin = {top: 20, right: 30, bottom: 40, left: 50},
+        var margin = {top: 50, right: 30, bottom: 60, left: 50},
             chart_width = 800 - margin.left - margin.right,
             chart_height = 500 - margin.top - margin.bottom;
         var y = d3.scale.linear()
@@ -178,16 +179,15 @@ var charts = function(account_name, datahub_client, conn) {
             .call(xAxis)
           .append("text")
             .attr("x", chart_width / 2)
-            .attr("y", 35)
+            .attr("y", 45)
             .text(xname);
 
         chart.append("g")
             .attr("class", "y axis")
             .call(yAxis)
           .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("dx", chart_height / -2)
-            .attr("y", -40)
+            .attr("text-anchor", "middle")
+            .attr("y", -15)
             .text(yname);
 
         var bar = chart.selectAll(".bar")
@@ -200,15 +200,17 @@ var charts = function(account_name, datahub_client, conn) {
     }
 
     var makeScatterPlot = function(data, xname, yname) {
-        var margin = {top: 20, right: 30, bottom: 40, left: 50},
-            chart_width = 640 - margin.left - margin.right,
-            chart_height = 400 - margin.top - margin.bottom;
+        var margin = {top: 40, right: 50, bottom: 50, left: 50},
+            chart_width = 800 - margin.left - margin.right,
+            chart_height = 500 - margin.top - margin.bottom;
 
+        var ymin = Math.min(0, d3.min(data, function(d) {return +d.yval; }));
+        var xmin = Math.min(0, d3.min(data, function(d) {return +d.xval; }));
         var y = d3.scale.linear()
-            .domain([0, d3.max(data, function(d) {return +d.yval; })])
+            .domain([ymin, d3.max(data, function(d) {return +d.yval; })])
             .range([chart_height, 0]);
         var x = d3.scale.linear()
-            .domain([0, d3.max(data, function(d) {return +d.xval; })])
+            .domain([xmin, d3.max(data, function(d) {return +d.xval; })])
             .range([0, chart_width]);
 
         var xAxis = d3.svg.axis()
@@ -226,20 +228,21 @@ var charts = function(account_name, datahub_client, conn) {
 
         chart.append("g")
             .attr("class", "x axis")
-            .attr("transform", "translate(0," + chart_height + ")")
+            .attr("transform", "translate(0," + y(0) + ")")
             .call(xAxis)
           .append("text")
-            .attr("x", chart_width / 2)
+            .attr("x", chart_width)
             .attr("y", 35)
+            .attr("text-anchor", "middle")
             .text(xname);
 
         chart.append("g")
             .attr("class", "y axis")
+            .attr("transform", "translate(" + x(0) + ",0)")
             .call(yAxis)
           .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("dx", chart_height / -2)
-            .attr("y", -40)
+            .attr("text-anchor", "middle")
+            .attr("y", -15)
             .text(yname);
 
         chart.selectAll(".circle")
