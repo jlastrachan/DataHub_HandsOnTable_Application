@@ -1,0 +1,23 @@
+.chart rect {
+  fill: steelblue;
+}
+.chart circle {
+  fill: steelblue;
+}
+.chart text {
+  font: 14px;
+}
+.chart {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.slice text {
+  font: 14px;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}

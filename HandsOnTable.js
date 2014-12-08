@@ -9,7 +9,12 @@ $(document).ready(function () {
 	con = client.open_connection(con_params),
     repos = client.list_repos(con);
 
+    chart_client = charts(accountName, client, con);
+    $('#chart_menu').click(chart_client.openModal);
+
     updateRepo(repoName);
+
+
 });
 
 var updateRepo = function(newRepoName) {
@@ -61,6 +66,7 @@ var updateTableData = function(tableName) {
 
 		},
 	});
+
 }
 
 var updateTableMenu = function(currentTableName, tables) {
@@ -81,6 +87,7 @@ var updateTableMenu = function(currentTableName, tables) {
         }
         $(".tables-menu").prepend(tableLink);
     });
+    chart_client.setTableInfo(repoName, shortTableName);
 }
 
 var updateRepositoryMenu = function(currentRepoName, repos) {

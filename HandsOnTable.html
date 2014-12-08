@@ -1,5 +1,6 @@
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>DataHub Spreadsheet</title>
     <script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
@@ -7,6 +8,9 @@
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
     <script type="text/javascript" src="HandsOnTable.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/charts.js"></script>
+    <script type="text/javascript" src="js/d3/d3.js"></script>
+    <script type="text/javascript" src="js/saveSvgAsPng.js"></script>
     <script src="http://handsontable.com/dist/handsontable.full.js"></script>
     <script type="text/javascript" src="aggregate.js"></script> 
     <script type="text/javascript" src="parser.js"></script>
@@ -15,6 +19,7 @@
     <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/handsontable.full.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/charts.css">
     <link rel="stylesheet" href="aggregate.css">
   </head>
   <body>
@@ -34,8 +39,8 @@
                 <li role="presentation" class="dropdown-header">Switch repositories...</li>
             </ul>
         </li>
-        <li><a id="chart_menu" href="" data-toggle="modal" data-target="#chartModal">Chart</a></li>
         <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#aggregateModal">Aggregate</a></li>
+        <li><a id="chart_menu" href="" data-toggle="modal" data-target="#chartModal">Chart</a></li>
         <li><a id="addColumnButton" href="" data-toggle="modal" data-target="#columnModal">Add Column</a></li>
         <li><a id="alterSchemaButton" href="" data-toggle="modal" data-target="#schemaModal">Alter Schema</a></li>
       </ul>
@@ -57,7 +62,8 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="go_button">Go</button>
+        <button type="button" class="btn btn-primary go_button">Go</button>
+        <button type="button" class="btn btn-primary" id="exportSVGButton" style="display:none">Download as PNG</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
@@ -73,7 +79,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="go_button">Go</button>
+        <button type="button" class="btn btn-primary go_button">Go</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
@@ -100,7 +106,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="go_button">Go</button>
+        <button type="button" class="btn btn-primary go_button">Go</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

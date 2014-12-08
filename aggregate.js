@@ -8,7 +8,7 @@ $('#aggregateButton').click (function() {
 	$("#aggregateFieldset").append('<div class="aggregateSection"> </div>');
 	addAggregateSection(0);
 	addGroupBySection ();
-	aggregateModal.find("#go_button").click( function () {
+	aggregateModal.find(".go_button").click( function () {
 		aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
 	});
@@ -76,6 +76,9 @@ function addAggregateOption (rowNumber) {
 function generateQuery () {
 	numRows = $(".aggregateInputSection").length;
 	var query = "SELECT ";
+    if ($("#groupByColumn").val() != "None") {
+        query += $("#groupByColumn").val() +", ";
+    }
 	for (i = 0; i < numRows; i++) { 
 		if ($("#aggregateType"+i).val()=='None') {
 			query+= $("#aggregateColumn"+i).val()+" ";
@@ -95,6 +98,7 @@ function generateQuery () {
 	if ($("#groupByColumn").val() !="None") {
 		query+=" group by "+$("#groupByColumn").val();
 	} 
+    $("#aggregateModal").find(".go_button").unbind("click");
 	return query;
 }
 
@@ -111,7 +115,7 @@ function executeAggregateQuery(query) {
 		colHeaders: columnNames,
 		contextMenu: true
 	});
-	aggregateModal.find(".modal-title").html('<div id="createTable" class="row"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
+	aggregateModal.find(".modal-title").html('<div id="createTable"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
 	$("#save_button").click (function () {
 		console.log("create new table");
 		$("#createTable").html('<div class="col-sm-8"><input class="form-control" id="newNameInput" placeholder="Type New Name Here"></div><button type="button" class="btn btn-default col-sm-3" id="save_button">Save</button>');
@@ -133,7 +137,7 @@ function executeAggregateQuery(query) {
 }
 
 function executeQuery(query) {
-		transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
+    transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
 	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
