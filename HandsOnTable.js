@@ -12,6 +12,41 @@ $(document).ready(function () {
     chart_client = charts(accountName, client, con);
     $('#chart_menu').click(chart_client.openModal);
 
+    $('#results').handsontable({
+		minSpareRows: 1,
+		contextMenu: true,
+		afterChange: function(changes, source) {
+			if (!changes) return;
+			changes.forEach(function (change) {
+				// save the results to DataHub
+				// var row = data[change[0]];
+				// var field_names = client.get_schema(con, tableName);
+				// var field_name = field_names[change[1]];
+				// var new_val = change[3];
+				// var sql = 'UPDATE ' + tableName + ' SET ' + field_name + '="' + new_val + '" WHERE ';
+				// row.forEach(function (col, index) {
+				// 	sql += field_names[index] + '="' + col + '"';
+				// 	if (index !== row.length - 1) {
+				// 		sql += ' AND ';
+				// 	}
+				// });
+				// client.execute_sql(con, sql);
+			});
+		}, 
+		afterRemoveCol: function (index, amount) {
+			console.log($(this));
+			console.log(index + ' ' + amount)
+			var field_names = client.get_schema(con, fullTableName);
+			console.log(field_names);
+			for (var i = index; i < index + amount; i++) {
+				if (field_names.tuples.length > i) {
+					var field_name = field_names.tuples[i].cells[0];
+					client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' DROP COLUMN ' + field_name);
+				}
+			}
+		},
+	});
+
     updateRepo(repoName);
 
 
@@ -30,42 +65,7 @@ var updateRepo = function(newRepoName) {
 var updateTableData = function(tableName) {
 	var res = client.execute_sql(con, 'select * from '+tableName);
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
-	$('#results').handsontable({
-		data: data,
-		minSpareRows: 1,
-		colHeaders: res.field_names,
-		contextMenu: true,
-		afterChange: function(changes, source) {
-			if (!changes) return;
-			changes.forEach(function (change) {
-				// save the results to DataHub
-				var row = data[change[0]];
-				var field_name = res.field_names[change[1]];
-				var new_val = change[3];
-				var sql = 'UPDATE ' + tableName + ' SET ' + field_name + '="' + new_val + '" WHERE ';
-				row.forEach(function (col, index) {
-					sql += res.field_names[index] + '="' + col + '"';
-					if (index !== row.length - 1) {
-						sql += ' AND ';
-					}
-				});
-				client.execute_sql(con, sql);
-			});
-		}, 
-		afterCreateCol: function (index, amount) {
-			// index is first newly created column in the data source
-			// amount is num newly created columns
-		},
-		afterCreateRow: function (index, amount) {
-
-		},
-		afterRemoveCol: function (index, amount) {
-
-		},
-		afterRemoveRow: function (index, amount) {
-
-		},
-	});
+	$('#results').data('handsontable').updateSettings({ data: data, colHeaders: res.field_names });
 
 }
 

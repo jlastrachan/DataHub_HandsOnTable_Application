@@ -286,7 +286,7 @@ var Parser = (function (scope) {
 			return nstack[0];
 		},
 
-		toSQL: function (toJS) {
+		toSQL: function (toJS, newColName) {
 			var nstack = [];
 			var n1;
 			var n2;
@@ -340,8 +340,8 @@ var Parser = (function (scope) {
 			if (nstack.length > 1) {
 				throw new Error("invalid Expression (parity)");
 			}
-			sql_exprs.push('ALTER TABLE ' + fullTableName + ' ADD COLUMN aggCol float');
-			sql_exprs.push("UPDATE " + fullTableName + ' SET aggCol=' + nstack[0] + "from " + from_exprs.join());
+			sql_exprs.push('ALTER TABLE ' + fullTableName + ' ADD COLUMN ' + newColName + ' float');
+			sql_exprs.push("UPDATE " + fullTableName + ' SET ' + newColName + '=' + nstack[0] + "from " + from_exprs.join());
 			return sql_exprs;
 		},
 
