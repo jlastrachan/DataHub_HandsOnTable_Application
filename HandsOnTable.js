@@ -62,6 +62,15 @@ var updateRepo = function(newRepoName) {
     fullTableName = firstTableName;
 }
 
+var updateCurrentTable = function(repoName, tableName) {
+    var tables = client.list_tables(con, repoName);
+    console.log(tableName);
+    updateTableData(accountName + "." + repoName + "."+ tableName);
+    updateTableMenu(tableName, tables);
+    updateRepositoryMenu(repoName, repos);
+    fullTableName = accountName + "." + repoName + "." +tableName;
+}
+
 var updateTableData = function(tableName) {
 	var res = client.execute_sql(con, 'select * from '+tableName);
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
