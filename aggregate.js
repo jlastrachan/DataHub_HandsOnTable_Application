@@ -28,6 +28,8 @@ function addAggregateSection (rowNumber) {
     			'<option>Count</option>'+
       			'<option>Sum</option>'+
       			'<option>Average</option>'+
+      			'<option>Max</option>'+
+      			'<option>Min</option>'+
     		'</select>'+
   		'</div></div>');
 
