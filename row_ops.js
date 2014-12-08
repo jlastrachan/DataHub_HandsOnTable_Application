@@ -1,13 +1,10 @@
 $(document).ready(function(){
 
-	$('#addColumnButton').click(function() {
-		$('.modal-title').html("Add a New Column");
-		$('.modal-body').html("");
-		$('.modal-body').append("<div id='expressionAlert' class='alert alert-danger hidden' role='alert'>Invalid Expression!</div>")
-		$('.modal-body').append("<p>Type in an algebraic expression for the new column. It can include aggregation operations such as AVG or SUM.</p>");
-		$('.modal-body').append("<input id='expressionText' type='text' class='form-control' placeholder='col0 - AVG(col0)'>");
+	$(document).on('click', '#addColumnButton', function() {
+		$('#columnModal').find('.modal-title').html("Add a New Column");
+		$('#columnModal').find('#expressionText').val("");
 		
-		$("#go_button").click(function() {
+		$('#columnModal').find("#go_button").click(function() {
 			parseExpression($('#expressionText').val());
 		});
 	});
@@ -17,6 +14,14 @@ $(document).ready(function(){
 // Returns the SQL query associated with the expression
 function parseExpression(text) {
 	var expr = Parser.parse(text);
-	console.log(expr);
-	console.log(expr.toSQL());
-}
+	sql_commands = expr.toSQL();
+	console.log(sql_commands);
+	var res;
+	sql_commands.forEach(function (sql) {
+		res = client.execute_sql(con, sql);
+	});
+	console.log(res);
+	// // TODO: correct field?
+	// client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' ADD COLUMN aggCol float');
+	// client.execute_sql(con, 'UPDATE ' + fullTableName + ' SET aggCol = newCol.avg FROM newCol');
+};

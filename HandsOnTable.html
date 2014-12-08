@@ -11,6 +11,7 @@
     <script type="text/javascript" src="aggregate.js"></script> 
     <script type="text/javascript" src="parser.js"></script>
     <script type="text/javascript" src="row_ops.js"></script>
+    <script type="text/javascript" src="alter_schema.js"></script>
     <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/handsontable.full.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="css/bootstrap.min.css">
@@ -36,6 +37,7 @@
         <li><a id="chart_menu" href="" data-toggle="modal" data-target="#chartModal">Chart</a></li>
         <li><a id="aggregateButton" href="" data-toggle="modal" data-target="#aggregateModal">Aggregate</a></li>
         <li><a id="addColumnButton" href="" data-toggle="modal" data-target="#columnModal">Add Column</a></li>
+        <li><a id="alterSchemaButton" href="" data-toggle="modal" data-target="#schemaModal">Alter Schema</a></li>
       </ul>
       
     </div><!-- /.navbar-collapse -->
@@ -44,7 +46,7 @@
     <table id="results" class="handsontable">
     </table>
 
-    <div class="modal fade" id="chartModal">
+<div class="modal fade" id="chartModal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -60,7 +62,7 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-    <div class="modal fade" id="aggregateModal">
+<div class="modal fade" id="aggregateModal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -76,7 +78,7 @@
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-     <div class="modal fade" id="columnModal">
+<div class="modal fade" id="columnModal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -84,10 +86,39 @@
         <h4 class="modal-title"></h4>
       </div>
       <div class="modal-body">
+        <div id='expressionAlert' class='form-group alert alert-danger hidden' role='alert'>Invalid Expression!</div>
+        <div class="form-group">Type in an algebraic expression for the new column. It can include aggregation operations such as AVG or SUM.</div>
+        <div class="form-group">
+          <input id='expressionText' type='text' class='form-control' placeholder='col0 - AVG(col0)'>
+        </div>
+        <div>
+          <label class="col-sm-4 control-label">Title of New Column</label>
+          <div class="col-sm-8">
+            <input type="text" id='columnName' placeholder='aggCol' class="form-control">
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary" id="go_button">Go</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<div class="modal fade" id="schemaModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close close_button" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title"></h4>
+      </div>
+      <div class="modal-body">
+        <div id="schemaList">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default close_button" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="submitAlts" data-dismiss="modal">Go</button>
       </div>
     </div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->

@@ -294,7 +294,8 @@ var Parser = (function (scope) {
 			var L = this.tokens.length;
 			var item;
 			var i = 0;
-			var from_exprs = [TABLE_NAME];
+			var from_exprs = [];
+			var sql_exprs = [];
 			for (i = 0; i < L; i++) {
 				item = this.tokens[i];
 				var type_ = item.type_;
@@ -302,7 +303,6 @@ var Parser = (function (scope) {
 					nstack.push(escapeValue(item.number_));
 				}
 				else if (type_ === TOP2) {
-					console.log('op2');
 					n2 = nstack.pop();
 					n1 = nstack.pop();
 					f = item.index_;
@@ -317,7 +317,6 @@ var Parser = (function (scope) {
 					nstack.push(item.index_);
 				}
 				else if (type_ === TOP1) {
-					console.log('op1');
 					n1 = nstack.pop();
 					f = item.index_;
 					if (f === "-") {
@@ -328,14 +327,11 @@ var Parser = (function (scope) {
 					}
 				}
 				else if (type_ === TFUNCALL) {
-					console.log('func');
 					n1 = nstack.pop();
 					f = nstack.pop();
-					if (f === "avg" || f === "sum") {
-						from_exprs.push("(select cast(")
-					}
-					from_exprs.push("(select " + f + "(" + n1 + ") from" + TABLE_NAME + ") as " + f);
-					nstack.push(f);
+					sql_exprs.push('CREATE OR REPLACE VIEW ' + f + '_' + n1 + ' as select ' + f + '(' + n1 + ') from ' + fullTableName);
+					from_exprs.push(f + '_' + n1);
+					nstack.push(f + '_' + n1 + '.' + f);
 				}
 				else {
 					throw new Error("invalid Expression");
@@ -344,7 +340,9 @@ var Parser = (function (scope) {
 			if (nstack.length > 1) {
 				throw new Error("invalid Expression (parity)");
 			}
-			return "select " + nstack[0] + "from " + from_exprs.join();
+			sql_exprs.push('ALTER TABLE ' + fullTableName + ' ADD COLUMN aggCol float');
+			sql_exprs.push("UPDATE " + fullTableName + ' SET aggCol=' + nstack[0] + "from " + from_exprs.join());
+			return sql_exprs;
 		},
 
 		variables: function () {

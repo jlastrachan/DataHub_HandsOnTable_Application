@@ -29,7 +29,37 @@ var updateTableData = function(tableName) {
 		data: data,
 		minSpareRows: 1,
 		colHeaders: res.field_names,
-		contextMenu: true
+		contextMenu: true,
+		afterChange: function(changes, source) {
+			if (!changes) return;
+			changes.forEach(function (change) {
+				// save the results to DataHub
+				var row = data[change[0]];
+				var field_name = res.field_names[change[1]];
+				var new_val = change[3];
+				var sql = 'UPDATE ' + tableName + ' SET ' + field_name + '="' + new_val + '" WHERE ';
+				row.forEach(function (col, index) {
+					sql += res.field_names[index] + '="' + col + '"';
+					if (index !== row.length - 1) {
+						sql += ' AND ';
+					}
+				});
+				client.execute_sql(con, sql);
+			});
+		}, 
+		afterCreateCol: function (index, amount) {
+			// index is first newly created column in the data source
+			// amount is num newly created columns
+		},
+		afterCreateRow: function (index, amount) {
+
+		},
+		afterRemoveCol: function (index, amount) {
+
+		},
+		afterRemoveRow: function (index, amount) {
+
+		},
 	});
 }
 
