@@ -2,6 +2,7 @@ $(document).ready(function(){
 	$('#schemaModal').find("#submitAlts").click(function() {
 		schemaAlts = [];
 		// find what changed
+		var res = client.get_schema(con, fullTableName);
 		res.tuples.forEach(function (tuple, index) {
 			if (tuple.cells[1] !== $('#dropdown' + index).text()) {
 				schemaAlts.push({ col: tuple.cells[0], newType: $('#dropdown' + index).text() });
