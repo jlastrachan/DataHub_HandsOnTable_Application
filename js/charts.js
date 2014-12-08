@@ -50,7 +50,12 @@ var charts = function(account_name, datahub_client, conn) {
         $("#chartModal").find(".modal-dialog").addClass("modal-lg");
         var modalTitle = $("#chartModal").find(".modal-title").text("Create a chart");
         var modalBody = $("#chartModal").find(".modal-body").html("");
-        $("#chartModal").find(".go_button").unbind("click");
+
+        modalBody.append("<p>Note: You can only create charts on existing columns. " +
+            "If you would like to chart counts or averages, please add a column or table with " +
+            "the appropriate values first.</p>");
+        $("#chartModal").find(".go_button").show().unbind("click");
+        $("#exportSVGButton").hide();
         var selector = create_selector("Chart type", ["(Select chart type)", "Pie chart", "Bar chart", "Scatterplot"]);
         selector.change(function() { 
             var val = selector.find(":selected").first().attr("value");
@@ -73,8 +78,12 @@ var charts = function(account_name, datahub_client, conn) {
         modalBody.append(chart_form);
         chart_form.hide();
 
-        var makeChart = function() {
+        var makeChart = function(e) {
             var val = selector.find(":selected").first().attr("value");
+            if (val != "Pie chart" && val != "Bar chart" && val != "Scatterplot") {
+                e.preventDefault();
+                return;
+            }    
             var xcol = $("#chartXCol").find("select").prop("selectedIndex");
             var ycol = $("#chartYCol").find("select").prop("selectedIndex");
             var x_name = column_names[xcol];
@@ -98,7 +107,7 @@ var charts = function(account_name, datahub_client, conn) {
                     makeScatterPlot(cdata, column_names[xcol], column_names[ycol]);
                     break;
                 default:
-                    console.log("chart unknown");
+                    console.log("chart type unknown");
             }
         }
         $("#chartModal").find(".go_button").click(makeChart);
@@ -128,7 +137,7 @@ var charts = function(account_name, datahub_client, conn) {
         var arc = d3.svg.arc()
             .outerRadius(radius);
         var pie = d3.layout.pie()
-            .value(function(d) { return d.yval; });
+            .value(function(d) { return Math.max(0, d.yval); });
 
         var arcs = chart.selectAll(".slice")
             .data(pie)
@@ -153,8 +162,9 @@ var charts = function(account_name, datahub_client, conn) {
         var margin = {top: 50, right: 30, bottom: 60, left: 50},
             chart_width = 800 - margin.left - margin.right,
             chart_height = 500 - margin.top - margin.bottom;
+        var ymin = Math.min(0, d3.min(data, function(d) {return +d.yval; }));
         var y = d3.scale.linear()
-            .domain([0, d3.max(data, function(d) {return +d.yval; })])
+            .domain([ymin, d3.max(data, function(d) {return +d.yval; })])
             .range([chart_height, 0]);
         var x = d3.scale.ordinal()
             .domain(data.map(function(d) { return d.xval; }))
@@ -173,9 +183,17 @@ var charts = function(account_name, datahub_client, conn) {
           .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+        var bar = chart.selectAll(".bar")
+            .data(data)
+          .enter().append("rect")
+            .attr("x", function(d) { return x(d.xval); })
+            .attr("y", function(d) { return Math.min(y(0), y(d.yval)); })
+            .attr("height", function(d) { return Math.abs(y(0) - y(d.yval)); })
+            .attr("width", x.rangeBand());
+ 
         chart.append("g")
             .attr("class", "x axis")
-            .attr("transform", "translate(0," + chart_height + ")")
+            .attr("transform", "translate(0," + y(0) + ")")
             .call(xAxis)
           .append("text")
             .attr("x", chart_width / 2)
@@ -190,14 +208,7 @@ var charts = function(account_name, datahub_client, conn) {
             .attr("y", -15)
             .text(yname);
 
-        var bar = chart.selectAll(".bar")
-            .data(data)
-          .enter().append("rect")
-            .attr("x", function(d) { return x(d.xval); })
-            .attr("y", function(d) { return y(d.yval); })
-            .attr("height", function(d) { return chart_height - y(d.yval); })
-            .attr("width", x.rangeBand());
-    }
+   }
 
     var makeScatterPlot = function(data, xname, yname) {
         var margin = {top: 40, right: 50, bottom: 50, left: 50},
