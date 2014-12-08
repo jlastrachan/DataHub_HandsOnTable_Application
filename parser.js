@@ -341,7 +341,11 @@ var Parser = (function (scope) {
 				throw new Error("invalid Expression (parity)");
 			}
 			sql_exprs.push('ALTER TABLE ' + fullTableName + ' ADD COLUMN ' + newColName + ' float');
-			sql_exprs.push("UPDATE " + fullTableName + ' SET ' + newColName + '=' + nstack[0] + "from " + from_exprs.join());
+            var update = "UPDATE " + fullTableName + ' SET ' + newColName + '=' + nstack[0];
+            if (from_exprs.length > 0) {
+                update += " from " + from_exprs.join();
+            }
+            sql_exprs.push(update);
 			return sql_exprs;
 		},
 
