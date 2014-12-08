@@ -57,6 +57,7 @@ function addGroupBySection () {
 		'<label class="control-label col-sm-3" for="aggregateType">Group By</label>'+
   		'<div class="col-sm-8">'+
     		'<select id="groupByColumn" name="aggregateType" class="input-xlarge form-control">'+
+    		'<option>None</option>'+
     		'</select>'+
   		'</div></div>');
 	var columns = $("#results").handsontable("getColHeader");
@@ -78,9 +79,9 @@ function generateQuery () {
 		if ($("#aggregateType"+i).val()=='None') {
 			query+= $("#aggregateColumn"+i).val()+" ";
 		} else if ($("#aggregateType"+i).val()=='Sum') {
-			query+= "sum("+$("#aggregateColumn"+i).val()+") ";
+			query+= "sum(cast("+$("#aggregateColumn"+i).val()+" as float)) ";
 		} else if ($("#aggregateType"+i).val()=='Average') {
-			query+= "avg("+$("#aggregateColumn"+i).val()+") ";
+			query+= "avg(cast("+$("#aggregateColumn"+i).val()+" as float)) ";
 		} else {
 			query+= $("#aggregateType"+i).val()+"("+$("#aggregateColumn"+i).val()+") ";
 		}
@@ -89,18 +90,15 @@ function generateQuery () {
 			query+=",";
 		}
 	}
-	query+="from finalproject6830.test.cpw_events group by "+$("#groupByColumn").val();
+	query+="from "+tableName;
+	if ($("#groupByColumn").val() !="None") {
+		query+=" group by "+$("#groupByColumn").val();
+	} 
 	return query;
 }
 
 function executeAggregateQuery(query) {
-	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
-	protocol = new Thrift.Protocol(transport),
-	client = new DataHubClient(protocol),
-	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
-	con = client.open_connection(con_params),
-	// res = client.execute_sql(con, 'select col0 from finalproject6830.test.cpw_events group by col0');
-	res = client.execute_sql(con, query);
+	res = executeQuery(query)
 
 	$(".modal-body").html("<table id='aggregateResults'></table>");
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
@@ -111,4 +109,34 @@ function executeAggregateQuery(query) {
 		colHeaders: columnNames,
 		contextMenu: true
 	});
+	$(".modal-title").html('<div id="createTable" class="row"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
+	$("#save_button").click (function () {
+		console.log("create new table");
+		$("#createTable").html('<div class="col-sm-8"><input class="form-control" id="newNameInput" placeholder="Type New Name Here"></div><button type="button" class="btn btn-default col-sm-3" id="save_button">Save</button>');
+		$("#save_button").click(function() {
+			newquery="CREATE TABLE finalproject6830.test."+$("#newNameInput").val()+" AS ("+ query+")";
+			// var newquery="CREATE TABLE finalproject6830.test."+$("#newNameInput").val()+" (";
+			// var columns = $("#aggregateResults").handsontable("getColHeader");
+			// for (i = 0; i < columns.length; i++) { 
+			// 	newquery+=columns[i]+" varchar(255)"
+			// 	if (i<columns.length-1) {
+			// 		newquery+=", "
+			// 	}
+			// }
+			// newquery+=");";
+			console.log(newquery);
+			executeQuery(newquery);
+		})
+	});
 }
+
+function executeQuery(query) {
+		transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
+	protocol = new Thrift.Protocol(transport),
+	client = new DataHubClient(protocol),
+	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
+	con = client.open_connection(con_params),
+	res = client.execute_sql(con, query);
+	return res;
+	}
+
