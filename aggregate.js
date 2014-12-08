@@ -1,14 +1,15 @@
 $(document).ready(function(){
 
 $('#aggregateButton').click (function() {
-	$('.modal-title').html("Create aggregation");
-	$('.modal-body').html("");
-	$('.modal-body').append("<div id='aggregateSelectionDiv'><form class='form-horizontal'><fieldset id='aggregateFieldset'></fieldset></form></div>");
+    var aggregateModal = $('#aggregateModal');
+	aggregateModal.find('.modal-title').html("Create aggregation");
+	aggregateModal.find('.modal-body').html("");
+	aggregateModal.find('.modal-body').append("<div id='aggregateSelectionDiv'><form class='form-horizontal'><fieldset id='aggregateFieldset'></fieldset></form></div>");
 	$("#aggregateFieldset").append('<div class="aggregateSection"> </div>');
 	addAggregateSection(0);
 	addGroupBySection ();
-	$("#go_button").click( function () {
-		$('.modal-title').html("Aggregation");
+	aggregateModal.find(".go_button").click( function () {
+		aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
 	});
 })
@@ -77,6 +78,9 @@ function addAggregateOption (rowNumber) {
 function generateQuery () {
 	numRows = $(".aggregateInputSection").length;
 	var query = "SELECT ";
+    if ($("#groupByColumn").val() != "None") {
+        query += $("#groupByColumn").val() +", ";
+    }
 	for (i = 0; i < numRows; i++) { 
 		if ($("#aggregateType"+i).val()=='None') {
 			query+= $("#aggregateColumn"+i).val()+" ";
@@ -92,17 +96,19 @@ function generateQuery () {
 			query+=",";
 		}
 	}
-	query+="from "+tableName;
+	query+="from "+fullTableName;
 	if ($("#groupByColumn").val() !="None") {
 		query+=" group by "+$("#groupByColumn").val();
 	} 
+    $("#aggregateModal").find(".go_button").unbind("click");
 	return query;
 }
 
 function executeAggregateQuery(query) {
 	res = executeQuery(query)
+    var aggregateModal = $("#aggregateModal");
 
-	$(".modal-body").html("<table id='aggregateResults'></table>");
+	aggregateModal.find(".modal-body").html("<table id='aggregateResults'></table>");
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
 	var columnNames = res.field_names;
 	$('#aggregateResults').handsontable({
@@ -111,7 +117,7 @@ function executeAggregateQuery(query) {
 		colHeaders: columnNames,
 		contextMenu: true
 	});
-	$(".modal-title").html('<div id="createTable" class="row"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
+	aggregateModal.find(".modal-title").html('<div id="createTable"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
 	$("#save_button").click (function () {
 		console.log("create new table");
 		$("#createTable").html('<div class="col-sm-8"><input class="form-control" id="newNameInput" placeholder="Type New Name Here"></div><button type="button" class="btn btn-default col-sm-3" id="save_button">Save</button>');
@@ -133,7 +139,7 @@ function executeAggregateQuery(query) {
 }
 
 function executeQuery(query) {
-		transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
+    transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
 	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
