@@ -2,8 +2,7 @@ var accountName = "finalproject6830";
 var repoName = "test";
 var fullTableName = "";
 $(document).ready(function () {
-	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
-	protocol = new Thrift.Protocol(transport),
+	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
 	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
 	con = client.open_connection(con_params),
@@ -14,7 +13,7 @@ $(document).ready(function () {
 
     $('#results').handsontable({
 		minSpareRows: 1,
-		contextMenu: true,
+		contextMenu: ['remove_col'],
 		afterChange: function(changes, source) {
 			if (!changes) return;
 			changes.forEach(function (change) {
@@ -74,7 +73,7 @@ var updateCurrentTable = function(repoName, tableName) {
 var updateTableData = function(tableName) {
 	var res = client.execute_sql(con, 'select * from '+tableName);
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
-	$('#results').data('handsontable').updateSettings({ data: data, colHeaders: res.field_names });
+	$('#results').data('handsontable').updateSettings({ data: data, readOnly: true, colHeaders: res.field_names });
 
 }
 
