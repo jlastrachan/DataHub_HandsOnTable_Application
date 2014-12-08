@@ -14,7 +14,6 @@ $('#aggregateButton').click (function() {
 	aggregateModal.find(".go_button").click( function () {
 		aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
-		aggregateModal.find(".modal-header").addClass("aggregateHeaderTable");
 	});
 })
  
@@ -43,6 +42,7 @@ function addAggregateSection (rowNumber) {
 	$("#"+inputsectionId).append(inputSectionText);
 	$("#deleteRow"+rowNumber).click (function() {
 		$('#aggregateInputSection'+(rowNumber-1)).remove();
+		rowNumber-=1;
 	})
 
 		$("#"+inputsectionId).append('<div class="control-group form-group">'+ 
@@ -131,9 +131,10 @@ function executeAggregateQuery(query) {
 	});
 	aggregateModal.find(".modal-title").html('<div id="createTable"><button type="button" class="btn btn-default" id="save_button">Save as new Table</button></div>');
 	$("#save_button").click (function () {
-		console.log("create new table");
+		aggregateModal.find(".modal-header").addClass("aggregateHeaderTable");
 		$("#createTable").html('<div class="col-sm-8"><input class="form-control" id="newNameInput" placeholder="Type New Name Here"></div><button type="button" class="btn btn-default col-sm-3" id="save_button">Save</button>');
 		$("#save_button").click(function() {
+			aggregateModal.find(".modal-header").removeClass("aggregateHeaderTable");
 			var newName = $("#newNameInput").val();
 			newquery="CREATE TABLE finalproject6830.test."+newName+" AS ("+ query+")";
 			console.log(newquery);
