@@ -144,6 +144,7 @@ function executeAggregateQuery(query) {
 			console.log(newquery);
 			executeQuery(newquery);
 			aggregateModal.find(".modal-title").html("Table "+newName+' successfully created!');
+			updateCurrentTable (repoName, fullTableName);
 			$("#openNewTableButton").html("Open "+newName);
 			$("#openNewTableButton").show();
 			$("#openNewTableButton").click (function () {
