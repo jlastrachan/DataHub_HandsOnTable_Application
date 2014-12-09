@@ -23,7 +23,7 @@ $(document).ready(function(){
 
 		var res = client.get_schema(con, fullTableName);
 		res.tuples.forEach(function (tuple, index) {
-			console.log(tuple);
+			// console.log(tuple);
 			$('#schemaModal').find('#schemaList').append(
 				'<tr>' + 
 					'<td>' + 

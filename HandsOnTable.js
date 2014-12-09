@@ -1,11 +1,12 @@
 var accountName = "finalproject6830";
+var password = 'databases'
 var repoName = "test";
 var fullTableName = "";
 $(document).ready(function () {
 	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
 	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
-	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
+	con_params = new ConnectionParams({'user': accountName, 'password': password}),
 	con = client.open_connection(con_params),
     repos = client.list_repos(con);
 

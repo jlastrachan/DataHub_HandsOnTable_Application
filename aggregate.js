@@ -66,7 +66,7 @@ function addAggregateSection (rowNumber) {
 }
 
 function addGroupBySection () {
-	$("#aggregateFieldset").append('<div class="container-fluid"> <div class="row aggregateGroupBySection"></br></div></div>');
+	$("#aggregateFieldset").append('<div class="container-fluid"> <div class="row well aggregateGroupBySection"></br></div></div>');
 	$(".aggregateGroupBySection").append('<div class="form-group">'+ 
 		'<label class="control-label col-sm-3" for="aggregateType">Group By</label>'+
   		'<div class="col-sm-8">'+
@@ -93,16 +93,20 @@ function generateQuery () {
         query += $("#groupByColumn").val() +", ";
     }
 	for (i = 0; i < numRows; i++) { 
+		var currentaggregateColumn = $("#aggregateColumn"+i).val();
+		var currentaggregateType = $("#aggregateType"+i).val();
 		if ($("#aggregateType"+i).val()=='None') {
 			query+= $("#aggregateColumn"+i).val()+" ";
-		} else if ($("#aggregateType"+i).val()=='Sum') {
+		} else {
+			if ($("#aggregateType"+i).val()=='Sum') {
 			query+= "sum(cast("+$("#aggregateColumn"+i).val()+" as float)) ";
 		} else if ($("#aggregateType"+i).val()=='Average') {
 			query+= "avg(cast("+$("#aggregateColumn"+i).val()+" as float)) ";
 		} else {
 			query+= $("#aggregateType"+i).val()+"("+$("#aggregateColumn"+i).val()+") ";
 		}
-
+		query += "as "+currentaggregateType+currentaggregateColumn+" ";
+		}
 		if(i<numRows-1) {
 			query+=",";
 		}
@@ -136,7 +140,7 @@ function executeAggregateQuery(query) {
 		$("#save_button").click(function() {
 			aggregateModal.find(".modal-header").removeClass("aggregateHeaderTable");
 			var newName = $("#newNameInput").val();
-			newquery="CREATE TABLE finalproject6830.test."+newName+" AS ("+ query+")";
+			newquery="CREATE TABLE "+accountName+".test."+newName+" AS ("+ query+")";
 			console.log(newquery);
 			executeQuery(newquery);
 			aggregateModal.find(".modal-title").html("Table "+newName+' successfully created!');
@@ -153,7 +157,7 @@ function executeQuery(query) {
     transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),
 	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
-	con_params = new ConnectionParams({'user': 'finalproject6830', 'password': 'databases'}),
+	con_params = new ConnectionParams({'user': accountName, 'password': password}),
 	con = client.open_connection(con_params),
 	res = client.execute_sql(con, query);
 	return res;
