@@ -1,5 +1,5 @@
-var accountName = "jennya";
-var password = 'test123'
+var accountName = "finalproject6830";
+var password = 'databases'
 var repoName = "test";
 var fullTableName = "";
 $(document).ready(function () {
