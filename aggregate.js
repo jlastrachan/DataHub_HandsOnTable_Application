@@ -1,21 +1,20 @@
 $(document).ready(function(){
-
-$('#aggregateButton').click (function() {
-    var aggregateModal = $('#aggregateModal');
-    aggregateModal.find(".go_button").show();
-    $("#openNewTableButton").hide();
-    aggregateModal.find(".modal-header").removeClass("aggregateHeaderTable");
-	aggregateModal.find('.modal-title').html("Create aggregation");
-	aggregateModal.find('.modal-body').html("");
-	aggregateModal.find('.modal-body').append("<div id='aggregateSelectionDiv'><form class='form-horizontal'><fieldset id='aggregateFieldset'></fieldset></form></div>");
-	$("#aggregateFieldset").append('<div class="aggregateSection"> </div>');
-	addAggregateSection(0);
-	addGroupBySection ();
-	aggregateModal.find(".go_button").click( function () {
-		aggregateModal.find('.modal-title').html("Aggregation");
+	$(document).on('click', '.go_button', function () {
+		//aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
 	});
-})
+	$('#aggregateButton').click (function() {
+	    var aggregateModal = $('#aggregateModal');
+	    aggregateModal.find(".go_button").show();
+	    $("#openNewTableButton").hide();
+	    aggregateModal.find(".modal-header").removeClass("aggregateHeaderTable");
+		aggregateModal.find('.modal-title').html("Create aggregation");
+		aggregateModal.find('.modal-body').html("");
+		aggregateModal.find('.modal-body').append("<div id='aggregateSelectionDiv'><form class='form-horizontal'><fieldset id='aggregateFieldset'></fieldset></form></div>");
+		$("#aggregateFieldset").append('<div class="aggregateSection"> </div>');
+		addAggregateSection(0);
+		addGroupBySection ();
+	});
  
 });
 
@@ -149,7 +148,8 @@ function executeAggregateQuery(query) {
 			$("#openNewTableButton").click (function () {
 				updateCurrentTable("test",newName);
 			})
-		})
+		});
+		updateRepo(repoName);
 	});
 }
 
@@ -161,5 +161,5 @@ function executeQuery(query) {
 	con = client.open_connection(con_params),
 	res = client.execute_sql(con, query);
 	return res;
-	}
+}
 

@@ -92,16 +92,19 @@
         <button type="button" class="close close_button" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
         <h4 class="modal-title"></h4>
       </div>
-      <div class="modal-body" style="padding-bottom: 60px">
+      <div class="modal-body" style="padding-bottom: 80px">
         <div id='expressionAlert' class='form-group alert alert-danger hidden' role='alert'>Invalid Expression!</div>
-        <div class="form-group">Type in an algebraic expression for the new column. It can include aggregation operations such as AVG or SUM.</div>
+        <div class="form-group">Type in an algebraic expression for the new column. It can include aggregation operations such as AVG or SUM. For example AVG(columnName) computes the average of all rows of columnName.</div>
         <div class="form-group">
-          <input id='expressionText' type='text' class='form-control' placeholder='col0 - AVG(col0)'>
-        </div>
-        <div>
           <label class="col-sm-4 control-label">Title of New Column</label>
           <div class="col-sm-8">
-            <input type="text" id='columnName' placeholder='aggCol' class="form-control">
+            <input type="text" id='columnName' placeholder='newCol' class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label">Data in New Column</label>
+          <div class="col-sm-8">
+            <input id='expressionText' type='text' class='form-control' placeholder='columnName1 + columnName2'>
           </div>
         </div>
       </div>
