@@ -1,5 +1,5 @@
-var accountName = "rnaphtal";
-var password = 'rmn199200'
+var accountName = "finalproject6830";
+var password = 'databases'
 var repoName = "test";
 var fullTableName = "";
 $(document).ready(function () {
