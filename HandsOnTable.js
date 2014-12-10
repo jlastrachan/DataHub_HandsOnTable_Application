@@ -66,9 +66,8 @@ var updateRepo = function(newRepoName, tableToShow) {
 
 var updateCurrentTable = function(repoName, tableName) {
     var tables = client.list_tables(con, repoName);
-    console.log(tableName);
     updateTableData(accountName + "." + repoName + "."+ tableName);
-    updateTableMenu(tableName, tables);
+    updateTableMenu(repoName + "." + tableName, tables);
     updateRepositoryMenu(repoName, repos);
     fullTableName = accountName + "." + repoName + "." +tableName;
 }
