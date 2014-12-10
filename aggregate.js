@@ -140,18 +140,15 @@ function executeAggregateQuery(query) {
 			aggregateModal.find(".modal-header").removeClass("aggregateHeaderTable");
 			var newName = $("#newNameInput").val();
 			newquery="CREATE TABLE "+accountName+".test."+newName+" AS ("+ query+")";
-			console.log(newquery);
 			executeQuery(newquery);
 			aggregateModal.find(".modal-title").html("Table "+newName+' successfully created!');
-            updateRepo(repoName);
-			//updateCurrentTable(repoName, newName);
 			$("#openNewTableButton").html("Open "+newName);
 			$("#openNewTableButton").show();
-			$("#openNewTableButton").click (function () {
+			$("#openNewTableButton").click(function () {
 				updateCurrentTable("test",newName);
-			})
+			});
+            updateRepo(repoName, fullTableName);
 		});
-		updateRepo(repoName);
 	});
 }
 

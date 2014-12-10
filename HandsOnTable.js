@@ -52,14 +52,16 @@ $(document).ready(function () {
 
 });
 
-var updateRepo = function(newRepoName) {
+var updateRepo = function(newRepoName, tableToShow) {
     repoName = newRepoName;
     var tables = client.list_tables(con, repoName);
-    var firstTableName = accountName + "." + repoName + "." + tables.tuples[0].cells[0];
-    updateTableData(firstTableName);
-    updateTableMenu(firstTableName.substr(accountName.length+1), tables);
+    if (tableToShow == null) {
+        tableToShow = accountName + "." + repoName + "." + tables.tuples[0].cells[0];
+    }
+    updateTableData(tableToShow);
+    updateTableMenu(tableToShow.substr(accountName.length+1), tables);
     updateRepositoryMenu(repoName, repos);
-    fullTableName = firstTableName;
+    fullTableName = tableToShow;
 }
 
 var updateCurrentTable = function(repoName, tableName) {
