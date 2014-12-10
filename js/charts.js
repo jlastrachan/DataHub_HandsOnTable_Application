@@ -261,7 +261,7 @@ var charts = function(account_name, datahub_client, conn) {
           .enter().append("circle")
             .attr("cx", function(d) {return x(d.xval); })
             .attr("cy", function(d) {return y(d.yval); })
-            .attr("r", 3)
+            .attr("r", 6)
         }
         return chart_client;
     };
