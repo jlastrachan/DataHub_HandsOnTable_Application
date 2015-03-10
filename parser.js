@@ -669,8 +669,6 @@ var Parser = (function (scope) {
 				tokenstack.push(tmp);
 			}
 			if (noperators + 1 !== tokenstack.length) {
-				//print(noperators + 1);
-				//print(tokenstack);
 				this.error_parsing(this.pos, "parity");
 			}
 

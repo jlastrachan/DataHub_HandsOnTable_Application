@@ -2,6 +2,9 @@ var accountName = "finalproject6830";
 var password = 'databases'
 var repoName = "test";
 var fullTableName = "";
+var numberTypes = ["bigint", "bit", "decimal", "int", "integer", "money", "numeric", "smallint", "smallmoney", "tinyint", "float", "real", "double", "double precision"]
+var decimalTypes = ["decimal", "money", "numeric", "smallmoney", "float", "real", "double", "double precision"]
+
 $(document).ready(function () {
 	transport = new Thrift.Transport("http://datahub.csail.mit.edu/service/json"),	protocol = new Thrift.Protocol(transport),
 	client = new DataHubClient(protocol),
@@ -15,24 +18,6 @@ $(document).ready(function () {
     $('#results').handsontable({
 		minSpareRows: 1,
 		contextMenu: ['remove_col'],
-		afterChange: function(changes, source) {
-			if (!changes) return;
-			changes.forEach(function (change) {
-				// save the results to DataHub
-				// var row = data[change[0]];
-				// var field_names = client.get_schema(con, tableName);
-				// var field_name = field_names[change[1]];
-				// var new_val = change[3];
-				// var sql = 'UPDATE ' + tableName + ' SET ' + field_name + '="' + new_val + '" WHERE ';
-				// row.forEach(function (col, index) {
-				// 	sql += field_names[index] + '="' + col + '"';
-				// 	if (index !== row.length - 1) {
-				// 		sql += ' AND ';
-				// 	}
-				// });
-				// client.execute_sql(con, sql);
-			});
-		}, 
 		afterRemoveCol: function (index, amount) {
 			console.log($(this));
 			console.log(index + ' ' + amount)
@@ -46,11 +31,43 @@ $(document).ready(function () {
 			}
 		},
 	});
+    $('#results').handsontable('getInstance').addHook('afterChange', function (changes) {
+        if (!changes) { return; }
+        var hot = this;
+        console.log(hot);
+        $.each(changes, function (index, element) {
+            console.log(element);
+            var p_key = hot.getDataAtCell(element[0], hot.getSettings().colHeaders.indexOf('p_key'));
+            var field_name = hot.getSettings().colHeaders[element[1]];
+            var new_val = hot.getSettings().columns[element[1]].type === 'numeric' ? element[3] : '"' + element[3] + '"';
+            var sql = 'UPDATE ' + fullTableName + ' SET ' + field_name + '=' + new_val + ' WHERE p_key = ' + p_key;
+            var res = client.execute_sql(con, sql);
+            console.log(res);
 
+        });
+    });
+    $('#results').handsontable('getInstance').addHook('beforeChange', function (changes, source) {
+        // do validation of changes here
+        var hot = this;
+        validChanges = []
+        $.each(changes, function (index, change) {
+            var dataType = getDataTypeForCol(hot.getSettings().colHeaders[change[1]]);
+        });
+    });
     updateRepo(repoName);
 
 
 });
+
+var getDataTypeForCol = function(colName) {
+    var res = client.execute_sql(con, 'SELECT pg_typeof("' + colName + '") from ' + fullTableName + ' limit 1');
+    return res.tuples[0].cells[0]
+}
+
+var formatNewVal = function(newVal, type) {
+    // make appropriate formatting for string v. int v. date (etc.)
+    return newVal;
+}
 
 var updateRepo = function(newRepoName, tableToShow) {
     repoName = newRepoName;
@@ -58,25 +75,50 @@ var updateRepo = function(newRepoName, tableToShow) {
     if (tableToShow == null) {
         tableToShow = accountName + "." + repoName + "." + tables.tuples[0].cells[0];
     }
+    fullTableName = tableToShow;
     updateTableData(tableToShow);
     updateTableMenu(tableToShow.substr(accountName.length+1), tables);
     updateRepositoryMenu(repoName, repos);
-    fullTableName = tableToShow;
 }
 
 var updateCurrentTable = function(repoName, tableName) {
     var tables = client.list_tables(con, repoName);
+    fullTableName = accountName + "." + repoName + "." +tableName;
     updateTableData(accountName + "." + repoName + "."+ tableName);
     updateTableMenu(repoName + "." + tableName, tables);
     updateRepositoryMenu(repoName, repos);
-    fullTableName = accountName + "." + repoName + "." +tableName;
 }
 
 var updateTableData = function(tableName) {
 	var res = client.execute_sql(con, 'select * from '+tableName);
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
-	$('#results').data('handsontable').updateSettings({ data: data, readOnly: true, colHeaders: res.field_names });
 
+    // If the table doesn't have a primary key, add one for every row
+    if (res.field_names.indexOf('p_key') === -1) {
+        // Add p_key field
+        var alterRes = client.execute_sql(con, 'ALTER TABLE ' + tableName + ' ADD p_key SERIAL');
+        res = client.execute_sql(con, 'select * from ' + tableName);
+        data = res.tuples.map(function (tuple) { return tuple.cells; });
+    }
+    var columns = [];
+    $.each(res.field_names, function (index, colData) {
+        var dataType = getDataTypeForCol(colData);
+        console.log(dataType);
+        if (numberTypes.indexOf(dataType) > -1) {
+            var colData = { type: 'numeric', allowInvalid: false };
+            if (decimalTypes.indexOf(dataType) > -1) {
+                colData.format = '0,0.00'
+            }
+            columns.push(colData);
+        } else if (dataType === 'date') {
+            columns.push({ type: 'date', allowInvalid: false });
+        } else {
+            columns.push({ });
+        }
+    });
+    console.log(columns);
+	$('#results').data('handsontable').updateSettings({ data: data, readOnly: false, colHeaders: res.field_names, columns: columns });
+    console.log($('#results').data('handsontable').getData());
 }
 
 var updateTableMenu = function(currentTableName, tables) {
