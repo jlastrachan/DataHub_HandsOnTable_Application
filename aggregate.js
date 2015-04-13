@@ -1,5 +1,5 @@
 $(document).ready(function(){
-	$(document).on('click', '.go_button', function () {
+	$(document).on('click', '#aggregateModal.go_button', function () {
 		//aggregateModal.find('.modal-title').html("Aggregation");
 		executeAggregateQuery(generateQuery());
 	});
