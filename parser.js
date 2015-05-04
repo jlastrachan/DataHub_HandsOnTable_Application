@@ -329,7 +329,7 @@ var Parser = (function (scope) {
 				else if (type_ === TFUNCALL) {
 					n1 = nstack.pop();
 					f = nstack.pop();
-					sql_exprs.push('CREATE OR REPLACE VIEW ' + f + '_' + n1 + ' as select ' + f + '(' + n1 + ') from ' + fullTableName);
+					sql_exprs.push('CREATE OR REPLACE VIEW ' + f + '__' + n1 + ' as select ' + f + '(' + n1 + ') from ' + fullTableName);
 					from_exprs.push(f + '_' + n1);
 					nstack.push(f + '_' + n1 + '.' + f);
 				}

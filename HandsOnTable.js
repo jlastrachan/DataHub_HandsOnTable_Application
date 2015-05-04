@@ -27,7 +27,7 @@ $(document).ready(function () {
         columnSorting: true,
         rowHeaders: true,
         // needs testing to see how slow with good wifi
-        //persistentState: true,
+        persistentState: true,
 		contextMenu: ['remove_col', 'row_above', 'row_below', 'col_left', 'col_right'],
 		afterRemoveCol: function (index, amount) {
 			var field_names = client.get_schema(con, fullTableName);
@@ -86,6 +86,40 @@ $(document).ready(function () {
             hot.setCellMeta(change[0], change[1], 'unsaved', 'true');
             unsavedData.push([change[0], change[1]]);
         });
+    });
+    $('#results').handsontable('getInstance').addHook('beforeKeyDown', function (event) {
+        console.log(event);
+        var selectedRange = $('#results').handsontable('getInstance').getSelected();
+        var td = $($('#results').handsontable('getInstance').getCell(selectedRange[0], selectedRange[1]));
+        // if the equals key is pressed, enter the equation environment
+        if (event.keyCode === 187) {
+            var div = document.createElement('div');
+            div.html = "Hello"
+            div.style.left = td.offset().left + td.width() + 10;
+            div.style.top = td.offset().top;
+            div.style.height = td.height();
+            //div.style.width = 50;
+            div.style.position = 'absolute';
+            div.style.backgroundColor = '#e7e7e7';
+
+            var checkbtn = document.createElement('button');
+            var xbtn = document.createElement('button');
+            checkbtn.onclick = function () {
+                // evaluate formula for all highlighted cells
+
+
+                $(div).remove();
+            };
+            xbtn.onclick = function () {
+                $('#results').handsontable('getInstance').undo();
+                $(div).remove();
+            }
+            $(checkbtn).html('<span class="glyphicon glyphicon-ok"></span>');
+            $(xbtn).html('<span class="glyphicon glyphicon-remove"></span>');
+            div.appendChild(xbtn);
+            div.appendChild(checkbtn);
+            document.body.appendChild(div);
+        }
     });
     $('#results').handsontable('getInstance').addHook('afterCreateCol', function (index, amount) {
         var hot = this;
@@ -194,7 +228,12 @@ var updateCurrentTable = function(repoName, tableName) {
 }
 
 var updateTableData = function(tableName) {
-	var res = client.execute_sql(con, 'select * from '+tableName);
+    try {
+        var res = client.execute_sql(con, 'create view ' + tableName + '_view as select * from ' + tableName);
+	} catch (err) {
+        console.log(err);
+    }
+    var res = client.execute_sql(con, 'select * from '+tableName);//+'_view');
 	var data = res.tuples.map(function (tuple) { return tuple.cells; });
     var hot = $('#results').handsontable('getInstance');
 
