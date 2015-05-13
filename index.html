@@ -7,6 +7,7 @@
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/thrift/thrift.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/datahub_types.js"></script>
     <script type="text/javascript" src="http://datahub.csail.mit.edu/static/lib/datahub/DataHub.js"></script>
+    <script type="text/javascript" src="datahub_utils.js"></script>
     <script type="text/javascript" src="HandsOnTable.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/charts.js"></script>
@@ -26,10 +27,8 @@
     <link rel="stylesheet" href="aggregate.css">
   </head>
   <body>
-    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container-fluid">
     
-
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
@@ -54,7 +53,20 @@
       
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
-</nav>
+    <div class="alert alert-danger fade in" role="alert" id="error_alert" hidden="true">
+      <button type="button" class="close" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+      <span id="error_msg">Here's some error text</span>
+      <a class="btn btn-default" data-toggle="collapse" href="#collapseExample" aria-expanded="false" aria-controls="collapseExample"> ... 
+      </a>
+      <div class="collapse" id="collapseExample">
+        <div class="well" id="error_submsg">
+          
+        </div>
+      </div>
+    </div>
+    <span class="glyphicon glyphicon-option-horizontal"></span>
     <table id="results" class="handsontable">
     </table>
 

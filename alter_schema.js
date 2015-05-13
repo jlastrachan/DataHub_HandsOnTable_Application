@@ -9,12 +9,43 @@ $(document).ready(function(){
 			}
 		});
 		schemaAlts.forEach(function (schemaAlt) {
-			client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' ADD COLUMN temp ' + schemaAlt.newType);
-			client.execute_sql(con, 'UPDATE ' + fullTableName + ' SET temp = cast(' + schemaAlt.col + ' as ' + schemaAlt.newType + ')');
-			client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' DROP COLUMN ' + schemaAlt.col);
-			client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' ADD COLUMN ' + schemaAlt.col + ' ' + schemaAlt.newType);
-			client.execute_sql(con, 'UPDATE ' + fullTableName + ' SET ' + schemaAlt.col + ' = temp');
-			client.execute_sql(con, 'ALTER TABLE ' + fullTableName + ' DROP COLUMN temp');
+			viewQuery = buildGetViewDefQuery(fullTableName + '_view');
+			console.log(schemaAlt);
+			var colName = schemaAlt['col'];
+			executeSQL('begin;', function (res) {
+				queryList = [buildAddColumnQuery(fullTableName, 'temp', schemaAlt.newType)];
+				queryList.push(buildUpdateQuery(fullTableName, {'temp' : 'cast(' + schemaAlt.col + ' as ' + schemaAlt.newType + ')'}));
+				queryList.push(buildDropColumnQuery(fullTableName, schemaAlt.col, true));
+				queryList.push(buildAddColumnQuery(fullTableName, schemaAlt.col, schemaAlt.newType));
+				changesObj = {};
+				changesObj[schemaAlt.col] = 'temp';
+				queryList.push(buildUpdateQuery(fullTableName, changesObj));
+				queryList.push(buildDropColumnQuery(fullTableName, 'temp'));
+				queryList.push(buildCreateViewQuery(fullTableName + '_view', viewQuery));
+				executeSQL(queryList.join('; '), function (res) {
+					// commit the transaction
+					executeSQL('commit;', function (res) {
+						// TODO (jennya)
+						return;
+					}, function (err) {
+						// TODO (jennya)
+						return;
+					});
+				}, function (err) {
+					// abort the transaction
+					console.log('aborting...');
+					executeSQL('rollback;', function (res) {
+						// TODO (jennya)
+						return;
+					}, function (err) {
+						// TODO (jennya)
+						return;
+					});
+				});
+			}, function (err) {
+				// TODO (jennya)
+				return;
+			});
 		});
 	});
 	$(document).on('click', '#alterSchemaButton', function() {
