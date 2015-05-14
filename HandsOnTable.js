@@ -71,10 +71,7 @@ $(document).ready(function () {
                     Handsontable.renderers.TextRenderer.apply(this, arguments);
                 }
                 if (cellProperties.unsaved === 'true') {
-                    //console.log(cellProperties);
                     td.style.background = 'yellow';
-                // } else if (cellProperties.error === 'true') {
-                //     td.style.background = 'red';
                 } else {
                     td.style.background = 'white';
                 }
@@ -112,8 +109,7 @@ $(document).ready(function () {
     $('#results').handsontable('getInstance').addHook('beforeRemoveRow', function (index, amount) {
         console.log(index + ' ' + amount);
         if (unsavedData.length > 0) {
-            // TODO (jennya)
-            // error message that can't delete row with unsaved data
+            displayErrorMessage('Can\'t delete a row when there are unsaved changes', 'Please save or discard your changes and then delete the row');
             return false;
         }
         // do the delete
@@ -129,7 +125,6 @@ $(document).ready(function () {
         // Don't allow a user to remove the p_key column
         pKeyCol = getPKColNum(this);
         if (pKeyCol >= index && pKeyCol < index + amount) {
-            // TODO (jennya)
             // error handle here before returning false
             displayErrorMessage('Can\'t delete the primary key column');
             return false;
@@ -146,7 +141,6 @@ $(document).ready(function () {
             div.style.left = td.offset().left + td.width() + 10;
             div.style.top = td.offset().top;
             div.style.height = td.height();
-            //div.style.width = 50;
             div.style.position = 'absolute';
             div.style.backgroundColor = '#e7e7e7';
             div.class = 'editButtons';
@@ -165,7 +159,6 @@ $(document).ready(function () {
                     executeSQL(buildDropColumnQuery(fullTableName, col_header, true), function (res) {
                         refreshCellMeta(fullTableName);
                     }, function (err) {
-                        // TODO (jennya)
                         displayErrorMessage('Could not delete column "' + col_header + '"', err.message);
                         return;
                     });
@@ -198,6 +191,7 @@ $(document).ready(function () {
             getColumnNames(fullTableName, function (columnNames) {
                 if (!columnNames) {
                     // TODO (jennya): handle error
+
                 }
                 $('#results').data('handsontable').updateSettings({
                     colHeaders: columnNames,
@@ -205,14 +199,13 @@ $(document).ready(function () {
                 refreshView(fullTableName + '_view');
             });
         }, function (err) {
-            // TODO (jennya)
+            displayErrorMessage('Could not add column ' + $('#newColName').val(), err.message);
             return;
         });
         
     });
     $(document).on('click', '#save', function() {
         // save all changes
-        console.log(unsavedData);
         var hot = $('#results').handsontable('getInstance');
         // parse through unsaved data and orient it by row
         changesByRow = {};
@@ -268,10 +261,10 @@ $(document).ready(function () {
             console.log(stmts);
             $.each(stmts, function (index, sql) {
                 executeSQL(sql, function (res) {
-                    // TODO (jennya)
+                    // do nothing
                     return;
                 }, function (err) {
-                    // TODO (jennya)
+                    displayErrorMessage('Error in saving data.', err.message);
                     return;
                 });
             });
@@ -320,12 +313,10 @@ var updateTableData = function(tableName) {
                     console.log(data);
                     $('#results').data('handsontable').updateSettings({
                         data: data, 
-                        //readOnly: false, 
                         colHeaders: res.field_names, 
-                        //columns: columns,
                     });
                 }, function (err) {
-                    // TODO (jennya)
+                    displayErrorMessage('Could not retrieve data from ' + tableName, err.message);
                     return;
                 });
             }
