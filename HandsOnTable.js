@@ -17,7 +17,6 @@ $(document).ready(function () {
         $(this).parent().hide();
     });
 
-
     repos = listRepos();
     var unsavedData = [];
 
@@ -70,6 +69,7 @@ $(document).ready(function () {
                 } else {
                     Handsontable.renderers.TextRenderer.apply(this, arguments);
                 }
+                td.setAttribute('data-toggle', 'popover');
                 if (cellProperties.unsaved === 'true') {
                     td.style.background = 'yellow';
                 } else {
@@ -86,7 +86,8 @@ $(document).ready(function () {
     //     $.each(changes, function (index, element) {
     //         var p_key = hot.getDataAtCell(element[0], getPKColNum(hot));
     //         var field_name = hot.getColHeader(element[1]);
-    //         var new_val = hot.getCellMeta(hot.sortIndex[element[0]][0],element[1]).type === 'numeric' ? element[3] : "'" + element[3] + "'";
+    //         var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[element[0]][0] : element[0];
+    //         var new_val = hot.getCellMeta(cellRow ,element[1]).type === 'numeric' ? element[3] : "'" + element[3] + "'";
     //         new_val = new_val === '' ?  '0' : new_val;
 
     //         executeSQL(buildUpdateQuery(fullTableName, { field_name: new_val }, p_key), function (res) {
@@ -102,7 +103,8 @@ $(document).ready(function () {
         var hot = this;
         $.each(changes, function (index, change) {
             console.log(change);
-            hot.setCellMeta(hot.sortIndex[change[0]][0], change[1], 'unsaved', 'true');
+            var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[change[0]][0] : change[0];
+            hot.setCellMeta(cellRow, change[1], 'unsaved', 'true');
             unsavedData.push([change[0], hot.getSettings().colHeaders[change[1]]]);
         });
     });
@@ -135,24 +137,27 @@ $(document).ready(function () {
         var selectedRange = hot.getSelected();
         var td = $(hot.getCell(selectedRange[0], selectedRange[1]));
         // if the equals key is pressed, enter the equation environment
-        if (event.keyCode === 187) {
-            hot.setCellMeta(hot.sortIndex[selectedRange[0]][0], selectedRange[1], 'type', 'text');
-            var div = document.createElement('div');
-            div.style.left = td.offset().left + td.width() + 10;
-            div.style.top = td.offset().top;
-            div.style.height = td.height();
-            div.style.position = 'absolute';
-            div.style.backgroundColor = '#e7e7e7';
-            div.class = 'editButtons';
-
-            var checkbtn = document.createElement('button');
-            var xbtn = document.createElement('button');
-            checkbtn.onclick = function () {
+        if (event.key === '=') {
+            var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[selectedRange[0]][0] : selectedRange[0];
+            hot.setCellMeta(cellRow, selectedRange[1], 'type', 'text');
+            // var div = document.createElement('div');
+            // div.style.left = td.offset().left + td.width() + 10;
+            // div.style.top = td.offset().top;
+            // div.style.height = td.height();
+            // div.style.position = 'absolute';
+            // div.style.backgroundColor = '#e7e7e7';
+            // div.class = 'editButtons';
+            console.log('trying to put popover...');
+            // $(td).popover({
+            //     html: 'testing<span class="glyphicon glyphicon-remove rejectFormula"></span><span class="glyphicon glyphicon-ok acceptFormula"></span>',
+            //     trigger: 'manual',
+            //     container: 'body',
+            // });
+            td.popover('show');
+            $(document).on('click', '.acceptFormula', function () {
                 // evaluate formula for all highlighted cells
                 var col_header = hot.getColHeader(selectedRange[1]);
                 if (col_header !== 'p_key') {
-                    console.log(hot.getDataAtCell(selectedRange[0], selectedRange[1]));
-                    console.log(hot.getDataAtCell(hot.sortIndex[selectedRange[0]][0], selectedRange[1]));
                     addColToView(fullTableName + '_view', hot.getDataAtCell(selectedRange[0], selectedRange[1]).substr(1), col_header);
                     
                     // remove old column
@@ -163,19 +168,21 @@ $(document).ready(function () {
                         return;
                     });
                 }
-                $(div).remove();
-                $('.editButtons').remove();
-            };
-            xbtn.onclick = function () {
+                td.popover('destroy');
+            });
+            $(document).on('click', '.rejectFormula', function () {
                 hot.undo();
                 $(div).remove();
-            }
-            $(checkbtn).html('<span class="glyphicon glyphicon-ok"></span>');
-            $(xbtn).html('<span class="glyphicon glyphicon-remove"></span>');
-            div.appendChild(xbtn);
-            div.appendChild(checkbtn);
-            document.body.appendChild(div);
+            });
         }
+    });
+    $('#results').handsontable('getInstance').addHook('afterRender', function () {
+        // Initialize popovers
+        $('[data-toggle="popover"]').popover({
+            html: 'testing',
+            trigger: 'manual',
+            container: 'body',
+        });
     });
     $('#results').handsontable('getInstance').addHook('afterCellMetaReset', function () {
         refreshCellMeta(fullTableName);
@@ -235,9 +242,10 @@ $(document).ready(function () {
                         var changeCol = getColNum(hot, field_name);
                         var new_text = hot.getDataAtCell(rowNum, changeCol);
                         var new_val = hot.getCellMeta(rowNum, changeCol).type === 'numeric' ? new_text : "'" + new_text + "'";
-                        new_val = new_val === '' ?  '0' : new_val;
+                        new_val = new_val === '' || new_val === 'None' ?  '0' : new_val;
                         changesObj[field_name] = new_val;
-                        hot.setCellMeta(hot.sortIndex[rowNum][0], changeCol, 'unsaved', 'false'); 
+                        rowNum = hot.sortIndex.length > 0 ? hot.sortIndex[rowNum][0] : rowNum;
+                        hot.setCellMeta(rowNum, changeCol, 'unsaved', 'false'); 
                     });
                     sql = buildUpdateQuery(fullTableName, changesObj, p_key);
                 } else {
@@ -252,7 +260,8 @@ $(document).ready(function () {
                         new_val = new_val === '' ?  '0' : new_val;
                         fieldNames.push(field_name);
                         newVals.push(new_val);
-                        hot.setCellMeta(hot.sortIndex[rowNum][0], changeCol, 'unsaved', 'false'); 
+                        rowNum = hot.sortIndex.length > 0 ? hot.sortIndex[rowNum][0] : rowNum;
+                        hot.setCellMeta(rowNum, changeCol, 'unsaved', 'false'); 
                     });
                     sql = buildInsertQuery(fullTableName, fieldNames, newVals);
                 }
@@ -326,7 +335,7 @@ var updateTableData = function(tableName) {
                     executeSQL(buildAddColumnQuery(tableName, 'p_key', 'SERIAL'), function (res) {
                         buildData();
                     }, function (err) {
-                        // TODO (jennya)
+                        displayErrorMessage('Could not add a primary key column.', err.message);
                         return;
                     });
             } else {
@@ -339,6 +348,7 @@ var updateTableData = function(tableName) {
 }
 var refreshCellMeta = function (tableName) {
     var hot = $('#results').handsontable('getInstance');
+    console.log(hot);
     getColumnNames(tableName, function (realCols) {
         $.each(hot.getSettings().colHeaders, function (index, colData) {
             var hasType = (realCols.indexOf(colData) > -1) ? true : false;
@@ -356,14 +366,16 @@ var refreshCellMeta = function (tableName) {
             for (var i = 0; i < hot.countRows(); i++) {
                 if (hasType) { 
                     $.each(Object.keys(colDataType), function (data_type_key_index, dataType) {
-                        hot.setCellMeta(hot.sortIndex[i][0], index, dataType, colDataType[dataType]);
+                        var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
+                        hot.setCellMeta(cellRow, index, dataType, colDataType[dataType]);
                     });
                     //hot.setCellMeta(i, index, 'type', colDataType); 
                 }
                 if (colData === 'p_key' || !hasType) {
-                    hot.setCellMeta(hot.sortIndex[i][0], index, 'format', '0,0[.]00');
-                    hot.setCellMeta(hot.sortIndex[i][0], index, 'type', 'numeric');
-                    hot.setCellMeta(hot.sortIndex[i][0], index, 'readOnly', true);
+                    var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
+                    hot.setCellMeta(cellRow, index, 'format', '0,0[.]00');
+                    hot.setCellMeta(cellRow, index, 'type', 'numeric');
+                    hot.setCellMeta(cellRow, index, 'readOnly', true);
                 } 
             }
         });
@@ -442,7 +454,7 @@ var getViewFields = function (viewName, callback) {
         console.log(fields_set);
         callback(fields_set);
     }, function (err) {
-        // TODO (jennya)
+        displayErrorMessage('Could not retrieve columns in table.', err.message);
         return;
     });
     
@@ -472,11 +484,11 @@ var replaceView = function (viewName, fields_set) {
         executeSQL(buildCreateViewQuery(viewName, buildSelectQuery(viewName.slice(0, viewName.indexOf('_view')), new_cols)), function (res) {
             updateTableData(viewName.slice(0, viewName.indexOf('_view')));
         }, function (err) {
-            // TODO (jennya)
+            displayErrorMessage('Could not create a new view.', err.message);
             return;
         });
     }, function (err) {
-        // TODO (jennya)
+        displayErrorMessage('Could not replace current view.', err.message);
         return;
     });
 }
