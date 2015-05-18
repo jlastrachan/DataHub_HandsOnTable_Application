@@ -15,6 +15,7 @@ var executeSQL = function (sqlString, successCallback, failureCallback) {
 		console.log('failure on ' + sqlString);
 		console.log(err);
 		failureCallback(err);
+		return;
 	}
 	successCallback(res);
 }

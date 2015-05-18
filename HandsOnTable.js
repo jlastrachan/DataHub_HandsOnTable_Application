@@ -19,6 +19,7 @@ $(document).ready(function () {
 
     repos = listRepos();
     var unsavedData = [];
+    var colHeaders = [];
 
     chart_client = charts(accountName, client, con);
     $('#chart_menu').click(chart_client.openModal);
@@ -34,8 +35,16 @@ $(document).ready(function () {
         // needs testing to see how slow with good wifi
         persistentState: true,
 		contextMenu: ['remove_col', 'row_above', 'row_below', 'col_left', 'col_right', 'remove_row'],
+        colHeaders: function (col) {
+            if (colHeaders.length > 0 && colHeaders[col].formula) {
+                return '<div class="popover" data-toggle="popover" data-placement="top" data-content="' + colHeaders[col].formula + '">' + colHeaders[col].name + '</div>';
+            }
+            return colHeaders[col];
+        },
 		afterRemoveCol: function (index, amount) {
             for (var i = index; i < index + amount; i++) {
+                console.log(this.getCellMeta(0, i));
+                return;
                 var colHeader = this.getColHeader(i);
                 executeSQL(buildSelectQuery(fullTableName, [colHeader], 0), function (res) {
                     getViewFields(fullTableName + '_view', function (fields_set) {
@@ -140,22 +149,21 @@ $(document).ready(function () {
         if (event.key === '=') {
             var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[selectedRange[0]][0] : selectedRange[0];
             hot.setCellMeta(cellRow, selectedRange[1], 'type', 'text');
-            // var div = document.createElement('div');
-            // div.style.left = td.offset().left + td.width() + 10;
-            // div.style.top = td.offset().top;
-            // div.style.height = td.height();
-            // div.style.position = 'absolute';
-            // div.style.backgroundColor = '#e7e7e7';
-            // div.class = 'editButtons';
-            console.log('trying to put popover...');
-            // $(td).popover({
-            //     html: 'testing<span class="glyphicon glyphicon-remove rejectFormula"></span><span class="glyphicon glyphicon-ok acceptFormula"></span>',
-            //     trigger: 'manual',
-            //     container: 'body',
-            // });
-            td.popover('show');
-            $(document).on('click', '.acceptFormula', function () {
+            var div = document.createElement('div');
+            div.style.left = td.offset().left;
+            div.style.top = td.offset().top + td.height() + 5;
+            div.style.height = td.height();
+            div.style.position = 'absolute';
+            div.style.backgroundColor = '#e7e7e7';
+            div.className = 'editButtons';
+
+            var checkbtn = document.createElement('button');
+            var xbtn = document.createElement('button');
+            checkbtn.className = "btn btn-default";
+            xbtn.className = "btn btn-default";
+            checkbtn.onclick = function (e) {
                 // evaluate formula for all highlighted cells
+                $('.editButtons').remove();
                 var col_header = hot.getColHeader(selectedRange[1]);
                 if (col_header !== 'p_key') {
                     addColToView(fullTableName + '_view', hot.getDataAtCell(selectedRange[0], selectedRange[1]).substr(1), col_header);
@@ -163,48 +171,38 @@ $(document).ready(function () {
                     // remove old column
                     executeSQL(buildDropColumnQuery(fullTableName, col_header, true), function (res) {
                         refreshCellMeta(fullTableName);
+                        $(div).remove();
+                        //$('.editButtons').remove();
                     }, function (err) {
                         displayErrorMessage('Could not delete column "' + col_header + '"', err.message);
+                        $(div).remove();
                         return;
                     });
                 }
-                td.popover('destroy');
-            });
-            $(document).on('click', '.rejectFormula', function () {
+            };
+            xbtn.onclick = function () {
                 hot.undo();
-                $(div).remove();
-            });
+                $('.editButtons').remove();
+            }
+            $(checkbtn).html('<span class="glyphicon glyphicon-ok"></span>');
+            $(xbtn).html('<span class="glyphicon glyphicon-remove"></span>');
+            div.appendChild(xbtn);
+            div.appendChild(checkbtn);
+            document.body.appendChild(div);
         }
-    });
-    $('#results').handsontable('getInstance').addHook('afterRender', function () {
-        // Initialize popovers
-        $('[data-toggle="popover"]').popover({
-            html: 'testing',
-            trigger: 'manual',
-            container: 'body',
-        });
     });
     $('#results').handsontable('getInstance').addHook('afterCellMetaReset', function () {
         refreshCellMeta(fullTableName);
     });
     $('#results').handsontable('getInstance').addHook('afterCreateCol', function (index, amount) {
         $('#newColName').val('');
-        $('#colTypes').val('');
+
         $('#addColModal').modal();
     });
     $('#addColModal').find(".go_button").click(function() {
         // do the add col sql statement
         executeSQL(buildAddColumnQuery(fullTableName, $('#newColName').val(), $('#colTypes').val()), function (res) {
-            getColumnNames(fullTableName, function (columnNames) {
-                if (!columnNames) {
-                    // TODO (jennya): handle error
-
-                }
-                $('#results').data('handsontable').updateSettings({
-                    colHeaders: columnNames,
-                });
-                refreshView(fullTableName + '_view');
-            });
+            refreshView(fullTableName + '_view');
         }, function (err) {
             displayErrorMessage('Could not add column ' + $('#newColName').val(), err.message);
             return;
@@ -282,226 +280,230 @@ $(document).ready(function () {
         });
     });
 
-    // prepare the add col modal
-    $('#colTypes').autocomplete({ source: dataTypes, appendTo: '#addColModal#typeDiv' });
-    updateRepo(repoName);
-});
-
-var updateRepo = function(newRepoName, tableToShow) {
-    repoName = newRepoName;
-    var tables = client.list_tables(con, repoName);
-    var i = 0;
-    while (tableToShow == null) {
-        tableToShow = accountName + "." + repoName + "." + tables.tuples[i].cells[0];
-        console.log(tableToShow);
-        if (tableToShow.indexOf('_view') > -1) { tableToShow = null; }
-        i++;
-    }
-    fullTableName = tableToShow;
-    updateTableData(tableToShow);
-    updateTableMenu(tableToShow.substr(accountName.length+1), tables);
-    updateRepositoryMenu(repoName, repos);
-}
-
-var updateCurrentTable = function(repoName, tableName) {
-    var tables = client.list_tables(con, repoName);
-    fullTableName = accountName + "." + repoName + "." +tableName;
-    updateTableData(accountName + "." + repoName + "."+ tableName);
-    updateTableMenu(repoName + "." + tableName, tables);
-    updateRepositoryMenu(repoName, repos);
-}
-
-var updateTableData = function(tableName) {
-    executeSQLQuietFail(buildCreateViewQuery(tableName + '_view', buildSelectQuery(tableName, ['*'])), function () {
-        getColumnNames(tableName, function (colNames) {
-            var buildData = function () {
-                executeSQL(buildSelectQuery(tableName + '_view', ['*']), function (res) {
-                    console.log(res);
-                    var data = res.tuples.map(function (tuple) { return tuple.cells; });
-                    var hot = $('#results').handsontable('getInstance');
-                    console.log(data);
-                    $('#results').data('handsontable').updateSettings({
-                        data: data, 
-                        colHeaders: res.field_names, 
-                    });
-                }, function (err) {
-                    displayErrorMessage('Could not retrieve data from ' + tableName, err.message);
-                    return;
-                });
-            }
-            // decide if we need to create a p_key
-            if (colNames.indexOf('p_key') === -1) {
-                // Add p_key field
-                    executeSQL(buildAddColumnQuery(tableName, 'p_key', 'SERIAL'), function (res) {
-                        buildData();
-                    }, function (err) {
-                        displayErrorMessage('Could not add a primary key column.', err.message);
-                        return;
-                    });
-            } else {
-                buildData();
-            }
-        });        
-    });
-    
-    unsavedData = [];
-}
-var refreshCellMeta = function (tableName) {
-    var hot = $('#results').handsontable('getInstance');
-    console.log(hot);
-    getColumnNames(tableName, function (realCols) {
-        $.each(hot.getSettings().colHeaders, function (index, colData) {
-            var hasType = (realCols.indexOf(colData) > -1) ? true : false;
-            if (hasType) {
-                var dataType = getDataTypeForCol(colData);
-                var colDataType = { type: 'text' };
-                if (numberTypes.indexOf(dataType) > -1) {
-                    // allowInvalid: false
-                    colDataType = { type: 'numeric', format: '0,0[.]00' };
-                } else if (dataType === 'date') {
-                    colDataType = { type: 'date', dateFormat: 'MM/DD/YYYY', correctFormat: true};
-                }
-            }
-            // run through all cells in col
-            for (var i = 0; i < hot.countRows(); i++) {
-                if (hasType) { 
-                    $.each(Object.keys(colDataType), function (data_type_key_index, dataType) {
-                        var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
-                        hot.setCellMeta(cellRow, index, dataType, colDataType[dataType]);
-                    });
-                    //hot.setCellMeta(i, index, 'type', colDataType); 
-                }
-                if (colData === 'p_key' || !hasType) {
-                    var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
-                    hot.setCellMeta(cellRow, index, 'format', '0,0[.]00');
-                    hot.setCellMeta(cellRow, index, 'type', 'numeric');
-                    hot.setCellMeta(cellRow, index, 'readOnly', true);
-                } 
-            }
-        });
-        hot.render();
-    });
-}
-var updateTableMenu = function(currentTableName, tables) {
-    $(".table-name").text(currentTableName);
-    var shortTableName = currentTableName.substr(currentTableName.indexOf(".")+1);
-    var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; }).reverse();
-    $(".table-link").remove();
-    table_names.forEach(function (name) { 
-        if (name.indexOf('_view') === -1) {
-            var midName = repoName + "." + name;
-            var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
-            tableLink.find("a").click(function() {
-                //$('#results').handsontable('getInstance').runHooks('persistentStateReset');
-                fullTableName = accountName + "." + midName;
-                updateTableData(fullTableName);
-                updateTableMenu(midName, tables); 
-            });
-            $(".tables-menu").prepend(tableLink);
-        }
-    });
-    chart_client.setTableInfo(repoName, shortTableName);
-}
-
-var updateRepositoryMenu = function(currentRepoName, repos) {
-    repoNames = repos.tuples.map(function (tuple) { return tuple.cells[0]; });
-    $(".repo-link").remove();
-    repoNames.forEach(function (name) {
-        var repoLink = $("<li class='repo-link'><a href='#'>"+name+"</a></li>");
-        repoLink.find("a").click(function() {updateRepo(name); });
-        $(".tables-menu").append(repoLink);
-        if (name == currentRepoName) {
-            repoLink.addClass("disabled");
-        }
-    });
-}
-var addColToView = function (viewName, colExpr, colName) {
-    getViewFields(viewName, function (fields_set) {
-        tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
-        console.log(tName + '.' + colName);
-        delete fields_set[tName + '.' + colName];
-        fields_set['(' + colExpr + ') as ' + colName] = true;
-
-        replaceView(viewName, fields_set);
-    });
-}
-
-var removeColFromView = function (viewName, colName) {
-    getViewFields(viewName, function (fields_set) {
-        var fieldToRemove = '';
-        $.each(Object.keys(fields_set), function (index, key) {
-            if (key.substr(key.indexOf('AS') + 3) === colName) {
-                fieldToRemove = key;
-            }
-        });
-        console.log('removing ' + fieldToRemove);
-        delete fields_set[fieldToRemove];
-        replaceView(viewName, fields_set);
-    });
-}
-
-var getViewFields = function (viewName, callback) {
-    executeSQL(buildGetViewDefQuery(viewName), function (res) {
-        var sql = res.tuples[0].cells[0];
-        sql = sql.slice(sql.indexOf('SELECT') + 7, sql.indexOf('FROM'));
-        var fields = sql.split(',');
-        var fields_set = {};
-        $.each(fields, function (index, element) {
-            if (!fields_set[element.trim()]) {
-                fields_set[element.trim()] = true;
-            }
-        });
-        console.log(fields_set);
-        callback(fields_set);
-    }, function (err) {
-        displayErrorMessage('Could not retrieve columns in table.', err.message);
-        return;
-    });
-    
-}
-
-var refreshView = function (viewName) {
-    var tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
-    getViewFields(viewName, function (fields_set) {
-        console.log(fields_set);
-        getColumnNames(viewName.slice(0, viewName.indexOf('_view')), function (fieldNames) {
-            $.each(fieldNames, function (index, element) {
-                if (fields_set[element] === undefined) {
-                    fields_set[tName + '.' + element] = true;
+    var getViewFields = function (viewName, callback) {
+        executeSQL(buildGetViewDefQuery(viewName), function (res) {
+            var sql = res.tuples[0].cells[0];
+            sql = sql.slice(sql.indexOf('SELECT') + 7, sql.indexOf('FROM'));
+            var fields = sql.split(',');
+            var fields_set = {};
+            $.each(fields, function (index, element) {
+                if (!fields_set[element.trim()]) {
+                    fields_set[element.trim()] = true;
                 }
             });
-            replaceView(viewName, fields_set);
-        });
-    });
-}
-
-var replaceView = function (viewName, fields_set) {
-    var new_cols = Object.keys(fields_set);
-    console.log(new_cols);
-    // first drop existing view
-    executeSQL(buildDropViewQuery(viewName, true), function (res) {
-        // now create with new query
-        executeSQL(buildCreateViewQuery(viewName, buildSelectQuery(viewName.slice(0, viewName.indexOf('_view')), new_cols)), function (res) {
-            updateTableData(viewName.slice(0, viewName.indexOf('_view')));
+            console.log(fields_set);
+            callback(fields_set);
         }, function (err) {
-            displayErrorMessage('Could not create a new view.', err.message);
+            displayErrorMessage('Could not retrieve columns in table.', err.message);
             return;
         });
-    }, function (err) {
-        displayErrorMessage('Could not replace current view.', err.message);
-        return;
-    });
-}
-
-var getPKColNum = function (hot) {
-    return getColNum(hot, 'p_key');
-}
-
-var getColNum = function (hot, colName) {
-    for (var i = 0; i < hot.getSettings().colHeaders.length; i++) {
-        if (hot.getColHeader(i) === colName) {
-            return i;
-        }
+        
     }
-    return -1;
-}
+
+    var updateRepo = function(newRepoName, tableToShow) {
+        repoName = newRepoName;
+        var tables = client.list_tables(con, repoName);
+        var i = 0;
+        while (tableToShow == null) {
+            tableToShow = accountName + "." + repoName + "." + tables.tuples[i].cells[0];
+            console.log(tableToShow);
+            if (tableToShow.indexOf('_view') > -1) { tableToShow = null; }
+            i++;
+        }
+        fullTableName = tableToShow;
+        updateTableData(tableToShow);
+        updateTableMenu(tableToShow.substr(accountName.length+1), tables);
+        updateRepositoryMenu(repoName, repos);
+    }
+
+    var updateCurrentTable = function(repoName, tableName) {
+        var tables = client.list_tables(con, repoName);
+        fullTableName = accountName + "." + repoName + "." +tableName;
+        updateTableData(accountName + "." + repoName + "."+ tableName);
+        updateTableMenu(repoName + "." + tableName, tables);
+        updateRepositoryMenu(repoName, repos);
+    }
+
+    var updateTableData = function(tableName) {
+        executeSQLQuietFail(buildCreateViewQuery(tableName + '_view', buildSelectQuery(tableName, ['*'])), function () {
+            getColumnNames(tableName, function (colNames) {
+                var buildData = function () {
+                    executeSQL(buildSelectQuery(tableName + '_view', ['*']), function (res) {
+                        console.log(res);
+                        var data = res.tuples.map(function (tuple) { return tuple.cells; });
+                        var hot = $('#results').handsontable('getInstance');
+                        $('#results').data('handsontable').updateSettings({
+                            data: data, 
+                        });
+                        getViewFields(tableName + '_view', function (fields_set) {
+                            $.each(res.field_names, function (index, name) {
+                                $.each(fields_set)
+                            })
+                        });
+                    }, function (err) {
+                        displayErrorMessage('Could not retrieve data from ' + tableName, err.message);
+                        return;
+                    });
+                }
+                // decide if we need to create a p_key
+                if (colNames.indexOf('p_key') === -1) {
+                    // Add p_key field
+                        executeSQL(buildAddColumnQuery(tableName, 'p_key', 'SERIAL'), function (res) {
+                            buildData();
+                        }, function (err) {
+                            displayErrorMessage('Could not add a primary key column.', err.message);
+                            return;
+                        });
+                } else {
+                    buildData();
+                }
+            });        
+        });
+        
+        unsavedData = [];
+    }
+    var refreshCellMeta = function (tableName) {
+        var hot = $('#results').handsontable('getInstance');
+        getColumnNames(tableName, function (realCols) {
+            $.each(hot.getSettings().colHeaders, function (index, colData) {
+                var hasType = (realCols.indexOf(colData) > -1) ? true : false;
+                if (hasType) {
+                    var dataType = getDataTypeForCol(colData);
+                    var colDataType = { type: 'text' };
+                    if (numberTypes.indexOf(dataType) > -1) {
+                        // allowInvalid: false
+                        colDataType = { type: 'numeric', format: '0,0[.]00' };
+                    } else if (dataType === 'date') {
+                        colDataType = { type: 'date', dateFormat: 'MM/DD/YYYY', correctFormat: true};
+                    }
+                }
+                // run through all cells in col
+                for (var i = 0; i < hot.countRows(); i++) {
+                    if (hasType) { 
+                        $.each(Object.keys(colDataType), function (data_type_key_index, dataType) {
+                            var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
+                            hot.setCellMeta(cellRow, index, dataType, colDataType[dataType]);
+                        });
+                        //hot.setCellMeta(i, index, 'type', colDataType); 
+                    }
+                    if (colData === 'p_key' || !hasType) {
+                        var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
+                        hot.setCellMeta(cellRow, index, 'format', '0,0[.]00');
+                        hot.setCellMeta(cellRow, index, 'type', 'numeric');
+                        hot.setCellMeta(cellRow, index, 'readOnly', true);
+                    } 
+                }
+            });
+            hot.render();
+        });
+    }
+    var updateTableMenu = function(currentTableName, tables) {
+        $(".table-name").text(currentTableName);
+        var shortTableName = currentTableName.substr(currentTableName.indexOf(".")+1);
+        var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; }).reverse();
+        $(".table-link").remove();
+        table_names.forEach(function (name) { 
+            if (name.indexOf('_view') === -1) {
+                var midName = repoName + "." + name;
+                var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
+                tableLink.find("a").click(function() {
+                    //$('#results').handsontable('getInstance').runHooks('persistentStateReset');
+                    fullTableName = accountName + "." + midName;
+                    updateTableData(fullTableName);
+                    updateTableMenu(midName, tables); 
+                });
+                $(".tables-menu").prepend(tableLink);
+            }
+        });
+        chart_client.setTableInfo(repoName, shortTableName);
+    }
+
+    var updateRepositoryMenu = function(currentRepoName, repos) {
+        repoNames = repos.tuples.map(function (tuple) { return tuple.cells[0]; });
+        $(".repo-link").remove();
+        repoNames.forEach(function (name) {
+            var repoLink = $("<li class='repo-link'><a href='#'>"+name+"</a></li>");
+            repoLink.find("a").click(function() {updateRepo(name); });
+            $(".tables-menu").append(repoLink);
+            if (name == currentRepoName) {
+                repoLink.addClass("disabled");
+            }
+        });
+    }
+    var addColToView = function (viewName, colExpr, colName) {
+        getViewFields(viewName, function (fields_set) {
+            tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
+            console.log(tName + '.' + colName);
+            delete fields_set[tName + '.' + colName];
+            fields_set['(' + colExpr + ') as ' + colName] = true;
+
+            replaceView(viewName, fields_set);
+        });
+    }
+
+    var removeColFromView = function (viewName, colName) {
+        getViewFields(viewName, function (fields_set) {
+            var fieldToRemove = '';
+            $.each(Object.keys(fields_set), function (index, key) {
+                if (key.substr(key.indexOf('AS') + 3) === colName) {
+                    fieldToRemove = key;
+                }
+            });
+            console.log('removing ' + fieldToRemove);
+            delete fields_set[fieldToRemove];
+            replaceView(viewName, fields_set);
+        });
+    }
+
+    var refreshView = function (viewName) {
+        var tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
+        getViewFields(viewName, function (fields_set) {
+            console.log(fields_set);
+            getColumnNames(viewName.slice(0, viewName.indexOf('_view')), function (fieldNames) {
+                $.each(fieldNames, function (index, element) {
+                    if (fields_set[element] === undefined) {
+                        fields_set[tName + '.' + element] = true;
+                    }
+                });
+                replaceView(viewName, fields_set);
+            });
+        });
+    }
+
+    var replaceView = function (viewName, fields_set) {
+        var new_cols = Object.keys(fields_set);
+        console.log(new_cols);
+        // first drop existing view
+        executeSQL(buildDropViewQuery(viewName, true), function (res) {
+            // now create with new query
+            executeSQL(buildCreateViewQuery(viewName, buildSelectQuery(viewName.slice(0, viewName.indexOf('_view')), new_cols)), function (res) {
+                updateTableData(viewName.slice(0, viewName.indexOf('_view')));
+            }, function (err) {
+                displayErrorMessage('Could not create a new view.', err.message);
+                return;
+            });
+        }, function (err) {
+            displayErrorMessage('Could not replace current view.', err.message);
+            return;
+        });
+    }
+
+    var getPKColNum = function (hot) {
+        return getColNum(hot, 'p_key');
+    }
+
+    var getColNum = function (hot, colName) {
+        for (var i = 0; i < hot.getSettings().colHeaders.length; i++) {
+            if (hot.getColHeader(i) === colName) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    // prepare the add col modal
+    //$('#colTypes').autocomplete({ source: dataTypes, appendTo: '#addColModal#typeDiv' });
+    $('#colTypes').select2({data: dataTypes });
+    updateRepo(repoName);
+});
