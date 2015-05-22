@@ -1,6 +1,5 @@
 $(document).ready(function(){
-	$(document).on('click', '#aggregateModal.go_button', function () {
-		//aggregateModal.find('.modal-title').html("Aggregation");
+	$('#aggregateModal').on('click', '.go_button', function () {
 		executeAggregateQuery(generateQuery());
 	});
 	$('#aggregateButton').click (function() {
@@ -54,7 +53,6 @@ function addAggregateSection (rowNumber) {
 	var columns = $("#results").handsontable("getColHeader");
 	i=0;
 	for (var i = 0; i < columns.length; i++) { 
-		// console.log(i);
 		$("#aggregateColumn"+rowNumber).append('<option>'+columns[i]+'</option>');
 	}
 

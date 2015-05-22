@@ -19,51 +19,20 @@ $(document).ready(function () {
 
     repos = listRepos();
     var unsavedData = [];
-    var colHeaders = [];
 
     chart_client = charts(accountName, client, con);
     $('#chart_menu').click(chart_client.openModal);
 
     $('#results').handsontable({
 		minSpareRows: 1,
-        manualColumnMove: true,
+        //manualColumnMove: true, // COLUMN ORDERING IN VIEW NOT ACCESSIBLE IN 0.15.2 HANDSONTABLE
         //manualRowMove: true, // MESSES UP SAVING BY ROW
         manualColumnResize: true,
         manualRowResize: true,
         columnSorting: true,
         rowHeaders: true,
-        // needs testing to see how slow with good wifi
         persistentState: true,
 		contextMenu: ['remove_col', 'row_above', 'row_below', 'col_left', 'col_right', 'remove_row'],
-        colHeaders: function (col) {
-            if (colHeaders.length > 0 && colHeaders[col].formula) {
-                return '<div class="popover" data-toggle="popover" data-placement="top" data-content="' + colHeaders[col].formula + '">' + colHeaders[col].name + '</div>';
-            }
-            return colHeaders[col];
-        },
-		afterRemoveCol: function (index, amount) {
-            for (var i = index; i < index + amount; i++) {
-                console.log(this.getCellMeta(0, i));
-                return;
-                var colHeader = this.getColHeader(i);
-                executeSQL(buildSelectQuery(fullTableName, [colHeader], 0), function (res) {
-                    getViewFields(fullTableName + '_view', function (fields_set) {
-                        fieldName = fullTableName.slice(fullTableName.lastIndexOf('.') + 1) + '.' + colHeader;
-                        delete fields_set[fieldName];
-                        replaceView(fullTableName + '_view', fields_set);
-                        executeSQL(buildDropColumnQuery(fullTableName, colHeader, true), function (res) {
-                            // TODO (jennya)
-                            return;
-                        }, function (err) {
-                            displayErrorMessage('Unable to remove column "' + colHeader + '"', err.message);
-                            return;
-                        });
-                    }); 
-                }, function (err) {
-                    removeColFromView(fullTableName + '_view', colHeader);
-                });
-            }
-		},
         cells: function(row, col, prop) {
             this.renderer = function (instance, td, row, col, prop, value, cellProperties) {
                 value = (value === "None" ? '' : value);
@@ -78,7 +47,6 @@ $(document).ready(function () {
                 } else {
                     Handsontable.renderers.TextRenderer.apply(this, arguments);
                 }
-                td.setAttribute('data-toggle', 'popover');
                 if (cellProperties.unsaved === 'true') {
                     td.style.background = 'yellow';
                 } else {
@@ -87,7 +55,6 @@ $(document).ready(function () {
             };
         }
 	});
-
     // Code for autosaving changes, can be uncommented for functionality
     // $('#results').handsontable('getInstance').addHook('afterChange', function (changes, source) {
     //     if (!changes || source !== 'edit') { return; }
@@ -108,7 +75,29 @@ $(document).ready(function () {
     //         });
     //     });
     // });
+    $('#results').handsontable('getInstance').addHook('afterRemoveCol', function (index, amount) {
+        for (var i = index; i < index + amount; i++) {
+            var colHeader = this.getColHeader(i);
+            executeSQL(buildSelectQuery(fullTableName, [colHeader], 0), function (res) {
+                getViewFields(fullTableName + '_view', function (fields_set) {
+                    fieldName = fullTableName.slice(fullTableName.lastIndexOf('.') + 1) + '.' + colHeader;
+                    delete fields_set[fieldName];
+                    replaceView(fullTableName + '_view', fields_set);
+                    executeSQL(buildDropColumnQuery(fullTableName, colHeader, true), function (res) {
+                        // silent on success -- view changes to show column removed
+                        return;
+                    }, function (err) {
+                        displayErrorMessage('Unable to remove column "' + colHeader + '"', err.message);
+                        return;
+                    });
+                }); 
+            }, function (err) {
+                removeColFromView(fullTableName + '_view', colHeader);
+            });
+        }
+    });
     $('#results').handsontable('getInstance').addHook('beforeChange', function (changes, source) {
+        // Add changes to unsaved data and highlight the edited cell
         var hot = this;
         $.each(changes, function (index, change) {
             console.log(change);
@@ -117,31 +106,17 @@ $(document).ready(function () {
             unsavedData.push([change[0], hot.getSettings().colHeaders[change[1]]]);
         });
     });
-    $('#results').handsontable('getInstance').addHook('beforeRemoveRow', function (index, amount) {
-        console.log(index + ' ' + amount);
-        if (unsavedData.length > 0) {
-            displayErrorMessage('Can\'t delete a row when there are unsaved changes', 'Please save or discard your changes and then delete the row');
-            return false;
-        }
-        // do the delete
-        var hot = this;
-        for (var i = index; i < index + amount; i++) {
-            // i is index of row in view
-            var pKeyCol = getPKColNum(hot);
-            console.log('deleting row with pkey' + hot.getDataAtCell(i, pKeyCol));
-        }
-    });
-
     $('#results').handsontable('getInstance').addHook('beforeRemoveCol', function (index, amount) {
         // Don't allow a user to remove the p_key column
         pKeyCol = getPKColNum(this);
         if (pKeyCol >= index && pKeyCol < index + amount) {
-            // error handle here before returning false
+            // error handle before returning false so the column isn't removed
             displayErrorMessage('Can\'t delete the primary key column');
             return false;
         }
     });
     $('#results').handsontable('getInstance').addHook('beforeKeyDown', function (event) {
+        // Check if the key is '=', if it is, then enter the equation environment
         var hot = this;
         var selectedRange = hot.getSelected();
         var td = $(hot.getCell(selectedRange[0], selectedRange[1]));
@@ -171,11 +146,8 @@ $(document).ready(function () {
                     // remove old column
                     executeSQL(buildDropColumnQuery(fullTableName, col_header, true), function (res) {
                         refreshCellMeta(fullTableName);
-                        $(div).remove();
-                        //$('.editButtons').remove();
                     }, function (err) {
                         displayErrorMessage('Could not delete column "' + col_header + '"', err.message);
-                        $(div).remove();
                         return;
                     });
                 }
@@ -196,10 +168,13 @@ $(document).ready(function () {
     });
     $('#results').handsontable('getInstance').addHook('afterCreateCol', function (index, amount) {
         $('#newColName').val('');
-
         $('#addColModal').modal();
     });
     $('#addColModal').find(".go_button").click(function() {
+        if (dataTypes.indexOf($('#newColName').val()) > -1) {
+            displayErrorMessage('Can\'t create a column with the name the same as a PostgreSQL data type');
+            return;
+        }
         // do the add col sql statement
         executeSQL(buildAddColumnQuery(fullTableName, $('#newColName').val(), $('#colTypes').val()), function (res) {
             refreshView(fullTableName + '_view');
@@ -280,6 +255,8 @@ $(document).ready(function () {
         });
     });
 
+    // Returns the fields that are in the view including the formulas for computed columns
+    // Returned as a dictionary of { fieldName: true }
     var getViewFields = function (viewName, callback) {
         executeSQL(buildGetViewDefQuery(viewName), function (res) {
             var sql = res.tuples[0].cells[0];
@@ -291,7 +268,6 @@ $(document).ready(function () {
                     fields_set[element.trim()] = true;
                 }
             });
-            console.log(fields_set);
             callback(fields_set);
         }, function (err) {
             displayErrorMessage('Could not retrieve columns in table.', err.message);
@@ -300,68 +276,8 @@ $(document).ready(function () {
         
     }
 
-    var updateRepo = function(newRepoName, tableToShow) {
-        repoName = newRepoName;
-        var tables = client.list_tables(con, repoName);
-        var i = 0;
-        while (tableToShow == null) {
-            tableToShow = accountName + "." + repoName + "." + tables.tuples[i].cells[0];
-            console.log(tableToShow);
-            if (tableToShow.indexOf('_view') > -1) { tableToShow = null; }
-            i++;
-        }
-        fullTableName = tableToShow;
-        updateTableData(tableToShow);
-        updateTableMenu(tableToShow.substr(accountName.length+1), tables);
-        updateRepositoryMenu(repoName, repos);
-    }
-
-    var updateCurrentTable = function(repoName, tableName) {
-        var tables = client.list_tables(con, repoName);
-        fullTableName = accountName + "." + repoName + "." +tableName;
-        updateTableData(accountName + "." + repoName + "."+ tableName);
-        updateTableMenu(repoName + "." + tableName, tables);
-        updateRepositoryMenu(repoName, repos);
-    }
-
-    var updateTableData = function(tableName) {
-        executeSQLQuietFail(buildCreateViewQuery(tableName + '_view', buildSelectQuery(tableName, ['*'])), function () {
-            getColumnNames(tableName, function (colNames) {
-                var buildData = function () {
-                    executeSQL(buildSelectQuery(tableName + '_view', ['*']), function (res) {
-                        console.log(res);
-                        var data = res.tuples.map(function (tuple) { return tuple.cells; });
-                        var hot = $('#results').handsontable('getInstance');
-                        $('#results').data('handsontable').updateSettings({
-                            data: data, 
-                        });
-                        getViewFields(tableName + '_view', function (fields_set) {
-                            $.each(res.field_names, function (index, name) {
-                                $.each(fields_set)
-                            })
-                        });
-                    }, function (err) {
-                        displayErrorMessage('Could not retrieve data from ' + tableName, err.message);
-                        return;
-                    });
-                }
-                // decide if we need to create a p_key
-                if (colNames.indexOf('p_key') === -1) {
-                    // Add p_key field
-                        executeSQL(buildAddColumnQuery(tableName, 'p_key', 'SERIAL'), function (res) {
-                            buildData();
-                        }, function (err) {
-                            displayErrorMessage('Could not add a primary key column.', err.message);
-                            return;
-                        });
-                } else {
-                    buildData();
-                }
-            });        
-        });
-        
-        unsavedData = [];
-    }
+    // Sets the type of cell to reflect the type in DataHub
+    // Make computed columns and p_key readOnly
     var refreshCellMeta = function (tableName) {
         var hot = $('#results').handsontable('getInstance');
         getColumnNames(tableName, function (realCols) {
@@ -384,7 +300,6 @@ $(document).ready(function () {
                             var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
                             hot.setCellMeta(cellRow, index, dataType, colDataType[dataType]);
                         });
-                        //hot.setCellMeta(i, index, 'type', colDataType); 
                     }
                     if (colData === 'p_key' || !hasType) {
                         var cellRow = hot.sortIndex.length > 0 ? hot.sortIndex[i][0] : i;
@@ -397,43 +312,11 @@ $(document).ready(function () {
             hot.render();
         });
     }
-    var updateTableMenu = function(currentTableName, tables) {
-        $(".table-name").text(currentTableName);
-        var shortTableName = currentTableName.substr(currentTableName.indexOf(".")+1);
-        var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; }).reverse();
-        $(".table-link").remove();
-        table_names.forEach(function (name) { 
-            if (name.indexOf('_view') === -1) {
-                var midName = repoName + "." + name;
-                var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
-                tableLink.find("a").click(function() {
-                    //$('#results').handsontable('getInstance').runHooks('persistentStateReset');
-                    fullTableName = accountName + "." + midName;
-                    updateTableData(fullTableName);
-                    updateTableMenu(midName, tables); 
-                });
-                $(".tables-menu").prepend(tableLink);
-            }
-        });
-        chart_client.setTableInfo(repoName, shortTableName);
-    }
 
-    var updateRepositoryMenu = function(currentRepoName, repos) {
-        repoNames = repos.tuples.map(function (tuple) { return tuple.cells[0]; });
-        $(".repo-link").remove();
-        repoNames.forEach(function (name) {
-            var repoLink = $("<li class='repo-link'><a href='#'>"+name+"</a></li>");
-            repoLink.find("a").click(function() {updateRepo(name); });
-            $(".tables-menu").append(repoLink);
-            if (name == currentRepoName) {
-                repoLink.addClass("disabled");
-            }
-        });
-    }
+    // Adds a computed column to the view
     var addColToView = function (viewName, colExpr, colName) {
         getViewFields(viewName, function (fields_set) {
             tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
-            console.log(tName + '.' + colName);
             delete fields_set[tName + '.' + colName];
             fields_set['(' + colExpr + ') as ' + colName] = true;
 
@@ -441,6 +324,7 @@ $(document).ready(function () {
         });
     }
 
+    // Removes a column (computed or not) from the view
     var removeColFromView = function (viewName, colName) {
         getViewFields(viewName, function (fields_set) {
             var fieldToRemove = '';
@@ -449,16 +333,15 @@ $(document).ready(function () {
                     fieldToRemove = key;
                 }
             });
-            console.log('removing ' + fieldToRemove);
             delete fields_set[fieldToRemove];
             replaceView(viewName, fields_set);
         });
     }
 
+    // Takes the current view and adds any columns present in the table to the view
     var refreshView = function (viewName) {
         var tName = viewName.slice(viewName.lastIndexOf('.') + 1, viewName.indexOf('_view'));
         getViewFields(viewName, function (fields_set) {
-            console.log(fields_set);
             getColumnNames(viewName.slice(0, viewName.indexOf('_view')), function (fieldNames) {
                 $.each(fieldNames, function (index, element) {
                     if (fields_set[element] === undefined) {
@@ -470,9 +353,9 @@ $(document).ready(function () {
         });
     }
 
+    // Drops the old view and creates a new one with the list of fields which are the keys in fields_set
     var replaceView = function (viewName, fields_set) {
         var new_cols = Object.keys(fields_set);
-        console.log(new_cols);
         // first drop existing view
         executeSQL(buildDropViewQuery(viewName, true), function (res) {
             // now create with new query
@@ -488,10 +371,12 @@ $(document).ready(function () {
         });
     }
 
+    // Returns the index of the primary key column
     var getPKColNum = function (hot) {
         return getColNum(hot, 'p_key');
     }
 
+    // Returns the index of the column with colName
     var getColNum = function (hot, colName) {
         for (var i = 0; i < hot.getSettings().colHeaders.length; i++) {
             if (hot.getColHeader(i) === colName) {
@@ -503,7 +388,108 @@ $(document).ready(function () {
 
 
     // prepare the add col modal
-    //$('#colTypes').autocomplete({ source: dataTypes, appendTo: '#addColModal#typeDiv' });
     $('#colTypes').select2({data: dataTypes });
+
+    // Retrieve all data and populate the UI
     updateRepo(repoName);
 });
+
+// Retreives information about the current repository and updates the table data 
+// to show the current table
+var updateRepo = function(newRepoName, tableToShow) {
+    repoName = newRepoName;
+    var tables = client.list_tables(con, repoName);
+    var i = 0;
+    while (tableToShow == null) {
+        tableToShow = accountName + "." + repoName + "." + tables.tuples[i].cells[0];
+        if (tableToShow.indexOf('_view') > -1) { tableToShow = null; }
+        i++;
+    }
+    fullTableName = tableToShow;
+    updateTableData(tableToShow);
+    updateTableMenu(tableToShow.substr(accountName.length+1), tables);
+    updateRepositoryMenu(repoName, repos);
+}
+
+// Updates the given table in the given repository
+var updateCurrentTable = function(repoName, tableName) {
+    var tables = client.list_tables(con, repoName);
+    fullTableName = accountName + "." + repoName + "." +tableName;
+    updateTableData(accountName + "." + repoName + "."+ tableName);
+    updateTableMenu(repoName + "." + tableName, tables);
+    updateRepositoryMenu(repoName, repos);
+}
+
+// Retrieves the data from DataHub, builds the data arrays
+// Adds a primary key column if one does not exist
+var updateTableData = function(tableName) {
+    var shortTableName = tableName.slice(tableName.lastIndexOf('.') + 1);
+    executeSQLQuietFail(buildCreateViewQuery(tableName + '_view', buildSelectQuery(tableName, ['*'])), function () {
+        getColumnNames(tableName, function (colNames) {
+            var buildData = function () {
+                executeSQL(buildSelectQuery(tableName + '_view', ['*']), function (res) {
+                    var data = res.tuples.map(function (tuple) { return tuple.cells; });
+                    var hot = $('#results').handsontable('getInstance');
+                    $('#results').data('handsontable').updateSettings({
+                        data: data, 
+                        colHeaders: res.field_names,
+                    });
+                    
+                }, function (err) {
+                    displayErrorMessage('Could not retrieve data from ' + tableName, err.message);
+                    return;
+                });
+            }
+            // decide if we need to create a p_key
+            if (colNames.indexOf('p_key') === -1) {
+                // Add p_key field
+                    executeSQL(buildAddColumnQuery(tableName, 'p_key', 'SERIAL'), function (res) {
+                        buildData();
+                    }, function (err) {
+                        displayErrorMessage('Could not add a primary key column.', err.message);
+                        return;
+                    });
+            } else {
+                buildData();
+            }
+        });        
+    });
+    
+    unsavedData = [];
+}
+
+// Updates the menu of available tables
+var updateTableMenu = function(currentTableName, tables) {
+    $(".table-name").text(currentTableName);
+    var shortTableName = currentTableName.substr(currentTableName.indexOf(".")+1);
+    var table_names = tables.tuples.map(function (tuple) { return tuple.cells[0]; }).reverse();
+    $(".table-link").remove();
+    table_names.forEach(function (name) { 
+        if (name.indexOf('_view') === -1) {
+            var midName = repoName + "." + name;
+            var tableLink = $("<li class='table-link'><a href='#'>"+midName+"</a></li>");
+            tableLink.find("a").click(function() {
+                //$('#results').handsontable('getInstance').runHooks('persistentStateReset');
+                fullTableName = accountName + "." + midName;
+                updateTableData(fullTableName);
+                updateTableMenu(midName, tables); 
+            });
+            $(".tables-menu").prepend(tableLink);
+        }
+    });
+    chart_client.setTableInfo(repoName, shortTableName);
+}
+
+// Updates the menu of available tables in the current repository 
+var updateRepositoryMenu = function(currentRepoName, repos) {
+    repoNames = repos.tuples.map(function (tuple) { return tuple.cells[0]; });
+    $(".repo-link").remove();
+    repoNames.forEach(function (name) {
+        var repoLink = $("<li class='repo-link'><a href='#'>"+name+"</a></li>");
+        repoLink.find("a").click(function() {updateRepo(name); });
+        $(".tables-menu").append(repoLink);
+        if (name == currentRepoName) {
+            repoLink.addClass("disabled");
+        }
+    });
+}
